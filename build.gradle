@@ -1,0 +1,66 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.5.12-SNAPSHOT'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'fintech'
+version = '0.0.1-SNAPSHOT'
+description = 'Project for Fintech'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+	maven { url = 'https://repo.spring.io/snapshot' }
+}
+
+ext {
+	set('springCloudVersion', "2025.0.1")
+}
+
+dependencies {
+	// [핵심] Web & Virtual Threads (MVC 기반 고성능 처리)
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+
+	// [보안/신뢰] Resilience4j (서킷 브레이커 & 리트라이)
+	implementation 'io.github.resilience4j:resilience4j-spring-boot3'
+	implementation 'org.springframework.boot:spring-boot-starter-aop'
+
+	// [정합성] JPA & PostgreSQL (Transactional Outbox용)
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	runtimeOnly 'org.postgresql:postgresql'
+
+	// [성능/가용성] Redis (멱등성 체크, Rate Limiting, 금액 위변조 검증)
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
+	// [비동기 전파] Kafka (채널계 -> 계정계 이벤트 전송)
+	implementation 'org.springframework.kafka:spring-kafka'
+
+	// [모니터링] Actuator (토스페이먼츠 등 테크 기업 필수 요건)
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+dependencyManagement {
+	imports {
+		mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+	}
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
