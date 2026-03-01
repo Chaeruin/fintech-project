@@ -1,7 +1,12 @@
 pluginManagement {
-	repositories {
-		maven { url = 'https://repo.spring.io/snapshot' }
-		gradlePluginPortal()
-	}
+    repositories {
+        maven { url = 'https://repo.spring.io/snapshot' }
+        gradlePluginPortal()
+    }
 }
-rootProject.name = 'demo'
+rootProject.name = 'fintech-payment-system'
+
+// 실제로 코드가 들어있는 하위 폴더(모듈)들을 포함시킵니다.
+// include '모듈명'
+include 'payment-common'
+include 'payment-service'

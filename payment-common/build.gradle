@@ -1,0 +1,32 @@
+plugins {
+    id 'java'
+}
+
+group = 'fintech'
+version = '0.0.1-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // 공통 모듈 의존성 (엔티티나 유틸리티 공유 시)
+    // implementation project(':payment-common')
+
+}
+
+// 모든 하위 프로젝트(subprojects)에 공통 적용
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'org.springframework.boot'
+
+    dependencies {
+        // 모든 공통 라이브러리
+        compileOnly 'org.projectlombok:lombok'
+        annotationProcessor 'org.projectlombok:lombok'
+    }
+}
+
+test {
+    useJUnitPlatform()
+}

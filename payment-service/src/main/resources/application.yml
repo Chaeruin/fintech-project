@@ -5,10 +5,12 @@ spring:
       enabled: true
 
   # 2. Database (PostgreSQL) - Transactional Outbox을 위한 저장소
+  application:
+    name: payment-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/payment_db
-    username: admin
-    password: password
+    url: ${SPRING_DATASOURCE_URL} # docker-compose나 .env에서 주입
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: update
@@ -28,21 +30,7 @@ spring:
       value-serializer: org.apache.kafka.common.serialization.JsonSerializer
       acks: all # 데이터 유실 방지를 위한 필수 설정
 
-  # 5. 결제 API 연동
-  payment:
-    toss:
-      base-url: https://api.tosspayments.com
-      secret-key: ${TOSS_SECRET_KEY:test_sk_0123456789}
-    portone:
-      base-url: https://api.iamport.kr # 포트원 V1 기준
-      api-key: ${PORTONE_API_KEY:imp_12345678}
-      api-secret: ${PORTONE_API_SECRET:secret_12345678}
-#      v2:
-#        base-url: https://api.portone.io
-#        store-id: ${PORTONE_STORE_ID:store-12345} # 상점 ID (V2에서 추가됨)
-#        api-secret: ${PORTONE_API_SECRET:sk_test_12345} # 시크릿 키
-
-  # 6. API Gateway 라우팅 규칙 설정
+  # 5. API Gateway 라우팅 규칙 설정
   cloud:
     gateway:
       routes:
@@ -55,6 +43,20 @@ spring:
               args:
                 replenishRate: 10
                 burstCapacity: 20
+
+# 5. 결제 API 연동
+payment:
+  toss:
+    base-url: https://api.tosspayments.com
+    secret-key: ${TOSS_SECRET_KEY:test_sk_0123456789}
+  portone:
+    base-url: https://api.iamport.kr # 포트원 V1 기준
+    api-key: ${PORTONE_API_KEY:imp_12345678}
+    api-secret: ${PORTONE_API_SECRET:secret_12345678}
+#      v2:
+#        base-url: https://api.portone.io
+#        store-id: ${PORTONE_STORE_ID:store-12345} # 상점 ID (V2에서 추가됨)
+#        api-secret: ${PORTONE_API_SECRET:sk_test_12345} # 시크릿 키
 
 # 6. Resilience4j 상세 설정 (가용량 제어 및 서킷 브레이커, 카드사 및 결제 API)
 resilience4j:
@@ -76,9 +78,12 @@ resilience4j:
         limitRefreshPeriod: 1s
         timeoutDuration: 0
 
-# 7. Actuator - 시스템 헬스 체커
+# 7. Actuator - 시스템 헬스 체커 / Prometheus & Grafana 설정
 management:
   endpoints:
     web:
       exposure:
-        include: health, info, prometheus
+        include: health, info, prometheus # prometheus 추가 필수
+  metrics:
+    tags:
+      application: ${spring.application.name} # 서비스 구분을 위한 태그

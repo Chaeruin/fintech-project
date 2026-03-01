@@ -66,6 +66,10 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 
+// 루트 프로젝트 자체는 빌드 결과물(Jar)을 만들지 않도록 설정
+bootJar { enabled = false }
+jar { enabled = true }
+
 dependencyManagement {
 	imports {
 		mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
