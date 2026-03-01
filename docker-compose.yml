@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  # 1. Database (PostgreSQL)
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    networks:
+      - toss-network
+
+  # 2. Cache & Rate Limit (Redis)
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - toss-network
+
+  # 3. Message Broker (Kafka)
+  kafka:
+    image: bitnami/kafka:latest
+    environment:
+      - KAFKA_CFG_ADVERTISED_LISTENERS=${KAFKA_ADVERTISED_LISTENERS}
+    networks:
+      - toss-network
+
+  # 4. API Gateway
+  api-gateway:
+    build: ./payment-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_REDIS_HOST=redis
+    networks:
+      - toss-network
+
+  # 5. Payment Service (Virtual Thread)
+  payment-service:
+    build: ./payment-service
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/payment_db
+      - TOSS_SECRET_KEY=${TOSS_SECRET_KEY}
+    networks:
+      - toss-network
+
+  # 6. Monitoring (Prometheus & Grafana)
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - toss-network
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - toss-network
+
+networks:
+  toss-network:
+    driver: bridge
