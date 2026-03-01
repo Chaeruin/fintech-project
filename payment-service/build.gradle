@@ -10,7 +10,7 @@ repositories {
 }
 
 dependencies {
-
+    implementation project(':payment-common')
 }
 
 // 모든 하위 프로젝트(subprojects)에 공통 적용
