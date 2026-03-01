@@ -58,6 +58,9 @@ dependencies {
 	// 3. 테스트 시 외부 API 모킹을 위한 MockWebServer (선택 사항이지만 강력 추천)
 	testImplementation 'com.squareup.okhttp3:mockwebserver'
 
+	// [API Gateway] Spring Cloud Gateway (Netty 기반 Non-blocking)
+	implementation 'org.springframework.cloud:spring-cloud-starter-gateway'
+
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'

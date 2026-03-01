@@ -42,6 +42,20 @@ spring:
 #        store-id: ${PORTONE_STORE_ID:store-12345} # 상점 ID (V2에서 추가됨)
 #        api-secret: ${PORTONE_API_SECRET:sk_test_12345} # 시크릿 키
 
+  # 6. API Gateway 라우팅 규칙 설정
+  cloud:
+    gateway:
+      routes:
+        - id: payment-service-route
+          uri: http://localhost:8081      # 실제 결제 서비스 주소
+          predicates:
+            - Path=/v1/payments/** # 이 경로로 들어오면
+          filters:
+            - name: RequestRateLimiter     # 호출 제한 필터 적용
+              args:
+                replenishRate: 10
+                burstCapacity: 20
+
 # 6. Resilience4j 상세 설정 (가용량 제어 및 서킷 브레이커, 카드사 및 결제 API)
 resilience4j:
   circuitbreaker:
