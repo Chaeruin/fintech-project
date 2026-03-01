@@ -50,6 +50,14 @@ dependencies {
 	// [모니터링] Actuator (토스페이먼츠 등 테크 기업 필수 요건)
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
+	// [결제 API 연동]
+	// 1. 외부 API 호출을 위한 WebClient (Reactive Web의 일부지만 클라이언트로만 사용)
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+	// 2. JSON 파싱 및 객체 매핑 (web-starter에 포함되어 있지만 명시적 확인)
+	implementation 'com.fasterxml.jackson.core:jackson-databind'
+	// 3. 테스트 시 외부 API 모킹을 위한 MockWebServer (선택 사항이지만 강력 추천)
+	testImplementation 'com.squareup.okhttp3:mockwebserver'
+
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
