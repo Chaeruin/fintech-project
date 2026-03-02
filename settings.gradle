@@ -7,8 +7,8 @@ pluginManagement {
 rootProject.name = 'fintech-payment-system'
 
 // 실제로 코드가 들어있는 하위 폴더(모듈)들을 포함
-// include '모듈명'
-include 'payment-common'
-include 'payment-service'
-include 'payment-gateway'
-include 'settlement-service'
+// include ':모듈명'
+include ':payment-common'
+include ':payment-service'
+include ':payment-gateway'
+include ':settlement-service'

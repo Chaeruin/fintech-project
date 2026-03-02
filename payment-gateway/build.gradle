@@ -1,19 +1,10 @@
 plugins {
-    id 'java'
-}
-
-group = 'fintech'
-version = '0.0.1-SNAPSHOT'
-
-repositories {
-    mavenCentral()
+    id 'org.springframework.boot'
 }
 
 dependencies {
-    testImplementation platform('org.junit:junit-bom:5.10.0')
-    testImplementation 'org.junit.jupiter:junit-jupiter'
+    implementation project(':payment-common')
+    implementation 'org.springframework.cloud:spring-cloud-starter-gateway'
 }
 
-test {
-    useJUnitPlatform()
-}
+jar { enabled = true }
