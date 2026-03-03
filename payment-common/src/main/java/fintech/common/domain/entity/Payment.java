@@ -46,4 +46,10 @@ public class Payment {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    public void complete(String transactionKey) {
+        this.status = PaymentStatus.PAID;
+        this.transactionKey = transactionKey;
+        this.updatedAt = LocalDateTime.now();
+    }
 }
