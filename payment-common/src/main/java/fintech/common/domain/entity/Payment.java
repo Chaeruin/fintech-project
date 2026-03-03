@@ -1,6 +1,7 @@
 package fintech.common.domain.entity;
 
 import fintech.common.domain.enums.PaymentStatus;
+import fintech.common.global.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -10,7 +11,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -23,11 +23,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 @Table(name = "payments")
-public class Payment {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class Payment extends BaseEntity {
 
     // 가맹점 주문번호
     @Column(nullable = false, unique = true)
@@ -43,14 +39,8 @@ public class Payment {
     // PG사 거래 키
     private String transactionKey;
 
-    // Spring 미적용 -> @CreatedDate 적용 불가
-    private LocalDateTime createdAt;
-
-    private LocalDateTime updatedAt;
-
     public void complete(String transactionKey) {
         this.status = PaymentStatus.PAID;
         this.transactionKey = transactionKey;
-        this.updatedAt = LocalDateTime.now();
     }
 }
