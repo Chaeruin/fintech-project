@@ -1,5 +1,6 @@
 package fintech.common.domain.entity;
 
+import fintech.common.domain.enums.PaymentStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
