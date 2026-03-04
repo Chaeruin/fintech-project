@@ -4,6 +4,7 @@ plugins {
 
 dependencies {
     implementation project(':payment-common')
+    implementation project(':payment-gateway')
     implementation 'org.springframework.boot:spring-boot-starter-web'
 
     // Toss/PortOne WebClient용
