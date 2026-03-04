@@ -1,0 +1,41 @@
+# 결제 서비스(8080)와 충돌하지 않도록 설정
+server:
+  port: 8082
+
+spring:
+  application:
+    name: settlement-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/settlement_db  # DB명 확인 필요
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  # 개발 단계에서는 update, 운영은 none 또는 validate
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: settlement-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+logging:
+  level:
+    fintech.settlement: debug
+    org.springframework.kafka: info
