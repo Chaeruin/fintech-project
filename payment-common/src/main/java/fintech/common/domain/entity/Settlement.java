@@ -22,7 +22,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "settlements", indexes = {
-        @Index(name = "idx_merchant_date", columnList = "merchantId, settlementDate")
+        @Index(name = "idx_settlement_merchant_date", columnList = "merchantId, settlementDate")
 })
 public class Settlement {
 
