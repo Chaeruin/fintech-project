@@ -19,10 +19,14 @@ public enum ErrorCode {
     PAYMENT_CANCEL_FAILED(400, "P004", "결제 취소에 실패했습니다."),
 
     // 외부 PG 연동 관련 (E로 시작)
-    EXTERNAL_PG_ERROR(502, "E001", "PG사 통신 중 오류가 발생했습니다.");
+    EXTERNAL_PG_ERROR(502, "E001", "PG사 통신 중 오류가 발생했습니다."),
 
-    private final int status; // HTTP 상태 코드
-    private final String code; // 비즈니스 에러 코드
-    private final String message; // 사용자 메시지
+    // 정산 관련 (S로 시작)
+    SETTLEMENT_NOT_FOUND(404, "S001", "정산 내역을 찾을 수 없습니다.");
+
+
+    private final int status;       // HTTP 상태 코드
+    private final String code;      // 비즈니스 에러 코드
+    private final String message;   // 사용자 메시지
 
 }

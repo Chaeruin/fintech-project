@@ -3,14 +3,16 @@ package fintech.application;
 
 import fintech.common.domain.dto.event.PaymentCompletedEvent;
 import fintech.common.domain.entity.Settlement;
+import fintech.common.global.exception.CustomException;
 import fintech.domain.service.SettlementCalculator;
 import fintech.infra.persistence.SettlementJpaRepository;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import fintech.common.global.exception.ErrorCode;
 
 @Slf4j
 @Service
@@ -42,6 +44,13 @@ public class SettlementService {
 
         log.info("정산 데이터 업데이트 완료: Merchant = {}, Date = {}, AddedAmount = {}",
                 event.merchantId(), settlementDate, event.amount());
+    }
+
+    // 정산 결과 조회
+    @Transactional(readOnly = true)
+    public Settlement getSettlement(String merchantId, LocalDateTime dateTime) {
+        return settlementRepository.findByMerchantIdAndSettlementDate(merchantId, dateTime)
+                .orElseThrow(() -> new CustomException(ErrorCode.SETTLEMENT_NOT_FOUND));
     }
 
     private Settlement createNewSettlement(String merchantId, LocalDateTime date) {
