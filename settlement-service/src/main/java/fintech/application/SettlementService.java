@@ -3,6 +3,7 @@ package fintech.application;
 
 import fintech.common.domain.dto.event.PaymentCompletedEvent;
 import fintech.common.domain.entity.Settlement;
+import fintech.domain.service.SettlementCalculator;
 import fintech.infra.persistence.SettlementJpaRepository;
 import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
