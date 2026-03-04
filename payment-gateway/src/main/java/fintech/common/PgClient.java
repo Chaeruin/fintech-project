@@ -1,4 +1,4 @@
-package fintech.infra.pg;
+package fintech.common;
 
 import java.math.BigDecimal;
 

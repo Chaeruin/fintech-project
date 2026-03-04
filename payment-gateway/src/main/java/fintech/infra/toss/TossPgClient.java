@@ -1,7 +1,7 @@
-package fintech.infra.pg.toss;
+package fintech.infra.toss;
 
 
-import fintech.infra.pg.PgClient;
+import fintech.common.PgClient;
 import java.math.BigDecimal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;

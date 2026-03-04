@@ -2,6 +2,7 @@ package fintech.application;
 
 
 import fintech.application.dto.PaymentConfirmCommand;
+import fintech.common.PgClient;
 import fintech.common.domain.dto.event.PaymentCompletedEvent;
 import fintech.common.domain.entity.Payment;
 import fintech.common.domain.enums.PaymentStatus;
@@ -10,7 +11,6 @@ import fintech.common.global.exception.ErrorCode;
 import fintech.domain.repository.PaymentRepository;
 import fintech.domain.service.PaymentValidator;
 import fintech.infra.kafka.PaymentEventProducer;
-import fintech.infra.pg.PgClient;
 import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
