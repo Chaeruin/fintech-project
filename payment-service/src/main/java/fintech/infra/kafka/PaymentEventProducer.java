@@ -7,6 +7,7 @@ import fintech.infra.persistence.entity.FailedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -26,7 +27,7 @@ public class PaymentEventProducer {
 
         // orderId를 Key로 사용하여 동일 주문의 이벤트 순서 보장
         kafkaTemplate.send(TOPIC_PAYMENT_COMPLETED, event.orderId(), event)
-                .whenComplete((result, ex) -> {
+                .whenComplete((result,  ex) -> {
                     if (ex == null) {
                         log.info("Kafka 전송 성공 - Offset: {}", result.getRecordMetadata().offset());
                     } else {

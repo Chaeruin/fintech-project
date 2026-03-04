@@ -2,21 +2,16 @@ package fintech.application;
 
 
 import fintech.application.dto.PaymentConfirmCommand;
-import fintech.common.PgClient;
 import fintech.common.domain.dto.event.PaymentCompletedEvent;
 import fintech.common.domain.entity.Payment;
-import fintech.common.domain.enums.PaymentStatus;
 import fintech.common.global.exception.CustomException;
 import fintech.common.global.exception.ErrorCode;
-import fintech.domain.repository.PaymentRepository;
 import fintech.domain.service.PaymentProcessor;
 import fintech.domain.service.PaymentValidator;
 import fintech.infra.kafka.PaymentEventProducer;
 import fintech.infra.persistence.PaymentJpaRepository;
 import fintech.infra.pg.PaymentProcessorFactory;
 import jakarta.transaction.Transactional;
-import java.time.LocalDateTime;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -29,7 +24,7 @@ public class PaymentService {
     private final PaymentProcessorFactory paymentProcessorFactory; // PG사 선택기
     private final PaymentJpaRepository paymentRepository;         // DB 저장소
     private final PaymentValidator paymentValidator;
-    private final PaymentEventPublisher eventPublisher;
+    private final PaymentEventProducer paymentEventProducer;
 
     @Transactional
     public void completePayment(PaymentConfirmCommand command) {
@@ -61,7 +56,8 @@ public class PaymentService {
                 payment.getMerchantId(),
                 payment.getCreatedAt()
         );
-        eventPublisher.publish(event);
+
+        paymentEventProducer.sendPaymentCompletedEvent(event);
 
         log.info("[PaymentService] 결제 완료 및 이벤트 발행: OrderId={}", command.orderId());
     }
