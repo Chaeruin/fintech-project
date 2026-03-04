@@ -1,4 +1,4 @@
-package fintech.common.dto;
+package fintech.common;
 
 
 import lombok.Builder;
