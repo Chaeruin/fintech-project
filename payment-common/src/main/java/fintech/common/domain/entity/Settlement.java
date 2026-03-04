@@ -63,4 +63,10 @@ public class Settlement {
     public void complete() {
         this.status = SettlementStatus.COMPLETED;
     }
+
+    public void updateAmount(BigDecimal amount, BigDecimal fee, BigDecimal settlementAmount) {
+        this.totalAmount = this.totalAmount.add(amount);
+        this.totalFee = this.totalFee.add(fee);
+        this.settlementAmount = this.settlementAmount.add(settlementAmount);
+    }
 }
