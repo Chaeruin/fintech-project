@@ -33,6 +33,9 @@ spring:
     properties:
       spring.json.add.type.headers: false   # 다른 서비스와의 호환성을 위해 헤더 정보 간소화
       enable.idempotence: true              # 메시지 전달 보장 수준을 높이기 위한 추가 설정
+      # 재시도 간격 설정 (처음엔 100ms, 실패할수록 지수적으로 늘림)
+      retry.backoff.ms: 100
+      delivery.timeout.ms: 120000 # 최대 2분간 재시도 시도
 
 
   # 5. API Gateway 라우팅 규칙 설정
