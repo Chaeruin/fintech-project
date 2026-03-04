@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public record PaymentCompletedEvent(
-        Long paymentId,             // 결제 고유 ID
+        String paymentId,             // 결제 고유 ID
         String orderId,             // 주문 번호
         BigDecimal amount,          // 결제 금액
         PaymentType paymentType,    // 결제 수단
