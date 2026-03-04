@@ -28,7 +28,12 @@ spring:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.JsonSerializer
-      acks: all # 데이터 유실 방지를 위한 필수 설정
+      acks: all     # 데이터 유실 방지를 위한 필수 설정
+      retries: 5    # 실패시 재시도 횟수 (데이터 정합성)
+    properties:
+      spring.json.add.type.headers: false   # 다른 서비스와의 호환성을 위해 헤더 정보 간소화
+      enable.idempotence: true              # 메시지 전달 보장 수준을 높이기 위한 추가 설정
+
 
   # 5. API Gateway 라우팅 규칙 설정
   cloud:
