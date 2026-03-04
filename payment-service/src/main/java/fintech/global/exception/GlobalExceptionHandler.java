@@ -1,4 +1,4 @@
-package fintech.global.error;
+package fintech.global.exception;
 
 import fintech.common.global.exception.CustomException;
 import fintech.common.global.exception.ErrorCode;
