@@ -27,6 +27,11 @@ public class PortOnePgClient implements PgClient {
     }
 
     @Override
+    public void cancel(String pgConfirmId, String reason) {
+
+    }
+
+    @Override
     public String getPgType() { return "PORTONE"; }
 
     private record PortOneConfirmRequest(String imp_uid, BigDecimal amount) {}

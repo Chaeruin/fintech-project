@@ -26,6 +26,11 @@ public class TossPgClient implements PgClient {
     }
 
     @Override
+    public void cancel(String pgConfirmId, String reason) {
+
+    }
+
+    @Override
     public String getPgType() {
         return "TOSS";
     }
