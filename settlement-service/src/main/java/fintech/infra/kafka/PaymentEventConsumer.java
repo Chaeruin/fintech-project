@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 public class PaymentEventConsumer {
 
     private final SettlementService settlementService;
+    private final SettlementRepository settlementRepository;
 
     // 결제 완료 이벤트를 수신하여 정산 기초 데이터를 생성
     @KafkaListener(
@@ -26,7 +27,12 @@ public class PaymentEventConsumer {
                 event.orderId(), event.amount());
 
         try {
-            log.info("정산 서비스 - 결제 이벤트 수신: OrderId = {}", event.orderId());
+            // 멱등성 체크 -  이미 정산 원장에 존재하는 주문인지 확인
+            if (settlementRepository.existsByOrderId(event.orderId())) {
+                log.warn("[멱등성] 이미 처리된 정산 이벤트입니다. 스킵합니다. OrderId = {}", event.orderId());
+                return;
+            }
+
             settlementService.processPaymentEvent(event);
         } catch (Exception e) {
             log.error("이벤트 처리 중 치명적 오류 발생 (사후 조치 필요): {}", event.orderId(), e);
