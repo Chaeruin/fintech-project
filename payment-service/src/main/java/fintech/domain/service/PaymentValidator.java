@@ -17,6 +17,10 @@ public class PaymentValidator {
             throw new CustomException(ErrorCode.ALREADY_PAID);
         }
 
+        if (!(payment.getStatus() == PaymentStatus.READY)) {
+            throw new CustomException(ErrorCode.INVALID_PAYMENT_STATUS);
+        }
+
         // 요청 금액과 DB에 기록된 금액이 일치하는지 확인 (데이터 정합성 체크 핵심)
         if (payment.getAmount().compareTo(requestAmount) != 0) {
             throw new CustomException(ErrorCode.INVALID_PAYMENT_AMOUNT);

@@ -3,7 +3,9 @@ package fintech.common.domain.dto.event;
 import fintech.common.domain.enums.PaymentType;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import lombok.Builder;
 
+@Builder
 public record PaymentCompletedEvent(
         String paymentId,             // 결제 고유 ID
         String orderId,             // 주문 번호

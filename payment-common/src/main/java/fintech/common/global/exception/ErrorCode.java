@@ -13,10 +13,13 @@ public enum ErrorCode {
     INTERNAL_SERVER_ERROR(500, "C003", "서버 내부 오류입니다."),
 
     // 결제 관련 (P로 시작)
-    PAYMENT_NOT_FOUND(404, "P001", "결제 내역을 찾을 수 없습니다."),
-    INVALID_PAYMENT_AMOUNT(400, "P002", "결제 금액이 일치하지 않습니다."),
-    ALREADY_PAID(400, "P003", "이미 완료된 결제건입니다."),
-    PAYMENT_CANCEL_FAILED(400, "P004", "결제 취소에 실패했습니다."),
+    PG_CONFIRM_FAILED(404, "P001", "결제를 진행할 수 없습니다."),
+    PAYMENT_PROCESS_FAILED(404, "P001_1", "결제에 실패했습니다"),
+    PAYMENT_NOT_FOUND(404, "P002", "결제 내역을 찾을 수 없습니다."),
+    INVALID_PAYMENT_AMOUNT(400, "P003", "결제 금액이 일치하지 않습니다."),
+    ALREADY_PAID(400, "P004", "이미 완료된 결제건입니다."),
+    PAYMENT_CANCEL_FAILED(400, "P005", "결제 취소에 실패했습니다."),
+    INVALID_PAYMENT_STATUS(400, "P006", "유효하지 않은 결제 상태입니다."),
 
     // 외부 PG 연동 관련 (E로 시작)
     EXTERNAL_PG_ERROR(502, "E001", "PG사 통신 중 오류가 발생했습니다."),
