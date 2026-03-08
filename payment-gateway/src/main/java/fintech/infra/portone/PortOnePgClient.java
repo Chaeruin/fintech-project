@@ -52,5 +52,11 @@ public class PortOnePgClient implements PgClient {
     @Override
     public String getPgType() { return "PORTONE"; }
 
+    // Fallback 메서드
+    public void fallbackConfirm(String paymentKey, String orderId, BigDecimal amount, Throwable t) {
+        log.error("PortOne PG사 서킷 오픈 혹은 타임아웃 발생: {}", t.getMessage());
+        throw new CustomException(ErrorCode.PG_TEMPORARY_UNAVAILABLE);
+    }
+
     private record PortOneConfirmRequest(String imp_uid, BigDecimal amount) {}
 }

@@ -20,6 +20,7 @@ public enum ErrorCode {
     ALREADY_PAID(400, "P004", "이미 완료된 결제건입니다."),
     PAYMENT_CANCEL_FAILED(400, "P005", "결제 취소에 실패했습니다."),
     INVALID_PAYMENT_STATUS(400, "P006", "유효하지 않은 결제 상태입니다."),
+    PG_TEMPORARY_UNAVAILABLE(400, "P007", "PG사 결제를 일시적으로 이용할 수 없습니다."),
 
     // 외부 PG 연동 관련 (E로 시작)
     EXTERNAL_PG_ERROR(502, "E001", "PG사 통신 중 오류가 발생했습니다."),

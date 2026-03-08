@@ -53,5 +53,11 @@ public class TossPgClient implements PgClient {
         return "TOSS";
     }
 
+    // PG사 장애 시 호출될 Fallback
+    public void fallbackConfirm(String paymentKey, String orderId, BigDecimal amount, Throwable t) {
+        log.error("TOSS PG사 서킷 오픈 혹은 타임아웃 발생: {}", t.getMessage());
+        throw new CustomException(ErrorCode.PG_TEMPORARY_UNAVAILABLE);
+    }
+
     private record TossConfirmRequest(String paymentKey, String orderId, BigDecimal amount) {}
 }
