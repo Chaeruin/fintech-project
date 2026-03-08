@@ -2,9 +2,17 @@ package fintech.infra.portone;
 
 
 import fintech.common.PgClient;
+import fintech.common.domain.dto.PgTransactionDto;
 import fintech.common.global.exception.CustomException;
 import fintech.common.global.exception.ErrorCode;
+import fintech.infra.pg.dto.PortOneResponse;
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,6 +54,31 @@ public class PortOnePgClient implements PgClient {
                     return Mono.error(new CustomException(ErrorCode.PAYMENT_CANCEL_FAILED));
                 })
                 .bodyToMono(Void.class)
+                .block();
+    }
+
+    @Override
+    public List<PgTransactionDto> fetchSuccessHistory(LocalDate date) {
+        // 포트원 API: 결제 완료 상태인 내역을 기간별로 조회
+        long from = date.atStartOfDay(ZoneId.systemDefault()).toEpochSecond();
+        long to = date.atTime(LocalTime.MAX).atZone(ZoneId.systemDefault()).toEpochSecond();
+
+        return webClient.get()
+                .uri(uriBuilder -> uriBuilder.path("/payments/status/paid")
+                        .queryParam("from", from)
+                        .queryParam("to", to)
+                        .build())
+                .header("Authorization", "PortOne_Access_Token") // 실제 토큰 로직 필요
+                .retrieve()
+                .bodyToFlux(PortOneResponse.class)
+                .map(res -> PgTransactionDto.builder()
+                        .pgId(res.imp_uid())
+                        .orderId(res.merchant_uid())
+                        .amount(res.amount())
+                        .status(res.status().toUpperCase())
+                        .approvedAt(LocalDateTime.ofInstant(Instant.ofEpochSecond(res.paid_at()), ZoneId.systemDefault()))
+                        .build())
+                .collectList()
                 .block();
     }
 

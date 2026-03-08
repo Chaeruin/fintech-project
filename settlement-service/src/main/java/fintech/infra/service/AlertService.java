@@ -1,4 +1,4 @@
-package fintech.infra;
+package fintech.infra.service;
 
 import fintech.common.infra.AlertProvider;
 import lombok.extern.slf4j.Slf4j;
