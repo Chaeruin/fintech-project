@@ -7,6 +7,9 @@ dependencies {
 
     // 외부 PG사와 비동기/동기 통신을 위한 WebFlux (WebClient 포함)
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    // reactive(webflux) 기반의 gateway를 사용해야 합니다.
+    implementation 'org.springframework.cloud:spring-cloud-starter-gateway'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis-reactive'
 
     // JSON 처리를 위한 Jackson (Java 21/JavaTime 지원)
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
