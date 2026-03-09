@@ -4,10 +4,10 @@ package fintech.application;
 import fintech.application.dto.PaymentConfirmCommand;
 import fintech.common.domain.dto.event.PaymentCompletedEvent;
 import fintech.common.domain.entity.Payment;
-import fintech.common.domain.enums.PaymentStatus;
 import fintech.common.domain.enums.PaymentType;
 import fintech.common.global.exception.CustomException;
 import fintech.common.global.exception.ErrorCode;
+import fintech.domain.repository.PaymentJpaRepositoryImpl;
 import fintech.domain.service.PaymentProcessor;
 import fintech.domain.service.PaymentValidator;
 import fintech.infra.kafka.PaymentEventProducer;
@@ -15,12 +15,12 @@ import fintech.infra.persistence.FailedEventJpaRepository;
 import fintech.infra.persistence.PaymentJpaRepository;
 import fintech.infra.persistence.entity.FailedEvent;
 import fintech.infra.pg.PaymentProcessorFactory;
-import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service

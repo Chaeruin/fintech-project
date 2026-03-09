@@ -1,7 +1,9 @@
 pluginManagement {
     repositories {
-        maven { url = 'https://repo.spring.io/snapshot' }
+        mavenCentral()
         gradlePluginPortal()
+        maven { url = 'https://repo.spring.io/milestone' }
+        maven { url = 'https://repo.spring.io/snapshot' }
     }
 }
 rootProject.name = 'fintech-payment-system'

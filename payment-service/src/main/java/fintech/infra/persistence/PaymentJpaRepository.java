@@ -9,10 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface PaymentJpaRepository extends JpaRepository<Payment, Long>, PaymentRepository {
-
-    @Override
-    Optional<Payment> findByOrderId(String orderId);
+public interface PaymentJpaRepository extends JpaRepository<Payment, Long> {
 
     // 날짜 범위(Between)와 결제 상태(Status)로 리스트 조회
     List<Payment> findAllByCreatedAtBetweenAndStatus(
@@ -20,4 +17,8 @@ public interface PaymentJpaRepository extends JpaRepository<Payment, Long>, Paym
             LocalDateTime end,
             String status
     );
+
+    Optional<Payment> findByOrderId(String orderId);
+
+    Optional<Payment> findById(Long id);
 }
