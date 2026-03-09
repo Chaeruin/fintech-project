@@ -8,3 +8,27 @@ management:
 logging:
   pattern:
     level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+
+spring:
+  application:
+    name: payment-gateway
+  cloud:
+    gateway:
+      routes:
+        - id: payment-service-route
+          uri: http://payment-service:8081      # 실제 결제 서비스 주소
+          predicates:
+            - Path=/v1/payments/** # 이 경로로 들어오면
+          filters:
+            - name: RequestRateLimiter     # 호출 제한 필터 적용
+              args:
+                replenishRate: 10
+                burstCapacity: 20
+                # 어떤 키로 제한할지 (사용자 IP 등) 설정
+                key-resolver: "#{@ipKeyResolver}"
+
+  data:
+    redis:
+      # 도커 환경변수가 없을 때를 대비한 기본값
+      host: ${SPRING_REDIS_HOST:localhost}
+      port: 6379

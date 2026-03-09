@@ -1,19 +1,19 @@
 server:
-  port: 8080
+  port: 8081
 
 spring:
+  application:
+    name: payment-service
   # 1. Virtual Threads 활성화
   threads:
     virtual:
       enabled: true
 
   # 2. Database (PostgreSQL) - Transactional Outbox을 위한 저장소
-  application:
-    name: payment-service
   datasource:
     url: jdbc:postgresql://localhost:5432/payment_db
-    username: ${POSTGRES_USER}
-    password: ${POSTGRES_PASSWORD}
+    username: ${POSTGRES_USER:payment_user}
+    password: ${POSTGRES_PASSWORD:payment_pass}
   jpa:
     hibernate:
       ddl-auto: update
@@ -40,20 +40,6 @@ spring:
       retry.backoff.ms: 100
       delivery.timeout.ms: 120000 # 최대 2분간 재시도 시도
 
-
-  # 5. API Gateway 라우팅 규칙 설정
-  cloud:
-    gateway:
-      routes:
-        - id: payment-service-route
-          uri: http://localhost:8081      # 실제 결제 서비스 주소
-          predicates:
-            - Path=/v1/payments/** # 이 경로로 들어오면
-          filters:
-            - name: RequestRateLimiter     # 호출 제한 필터 적용
-              args:
-                replenishRate: 10
-                burstCapacity: 20
 
 # 5. 결제 API 연동
 payment:

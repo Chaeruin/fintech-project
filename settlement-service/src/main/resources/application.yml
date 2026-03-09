@@ -7,9 +7,9 @@ spring:
     name: settlement-service
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/settlement_db  # DB명 확인 필요
-    username: ${POSTGRES_USER}
-    password: ${POSTGRES_PASSWORD}
+    url: jdbc:postgresql://localhost:5433/settlement_db  # DB명 확인 필요
+    username: ${POSTGRES_USER:settlement_user}
+    password: ${POSTGRES_PASSWORD:settlement_pass}
     driver-class-name: org.postgresql.Driver
 
   # 개발 단계에서는 update, 운영은 none 또는 validate
