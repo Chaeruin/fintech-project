@@ -2,20 +2,25 @@ package fintech.global.config;
 
 import fintech.event.PaymentCompletedEvent;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.CooperativeStickyAssignor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.VirtualThreadTaskExecutor;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.listener.ContainerProperties;
 import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
 import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.springframework.util.backoff.ExponentialBackOff;
 import org.springframework.util.backoff.FixedBackOff;
 
 @Slf4j
@@ -29,6 +34,10 @@ public class KafkaConsumerConfig {
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "settlement-group");
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest"); // 처음부터 읽기
+
+        // 리밸런싱 최적화 - Incremental Cooperative Rebalancing 전략
+        props.put(ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY_CONFIG,
+                List.of(CooperativeStickyAssignor.class.getName()));
 
         // JSON 역직렬화 설정
         JsonDeserializer<PaymentCompletedEvent> deserializer = new JsonDeserializer<>(PaymentCompletedEvent.class);
@@ -48,6 +57,17 @@ public class KafkaConsumerConfig {
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory);
         factory.setCommonErrorHandler(errorHandler); // 에러 핸들러 등록
+
+        // 성능 튜닝 : 12개 파티션과 1:1 매핑을 위한 Concurrency 설정
+        factory.setConcurrency(12);
+
+        // 성능 튜닝 : Java 21 가상 스레드(Virtual Threads) 적용
+        // 정산 DB 저장 시 발생하는 I/O 대기 시간 동안 스레드 효율을 극대화
+        factory.getContainerProperties().setListenerTaskExecutor(new VirtualThreadTaskExecutor("settlement-vt-"));
+
+        // 성능 튜닝 : 레코드 단위 Ack 설정 (세밀한 오프셋 관리)
+        factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.RECORD);
+
         return factory;
     }
 
@@ -58,8 +78,9 @@ public class KafkaConsumerConfig {
         // default : "원래토픽명.DLT"로 전송됨 (payment-completed.DLT)
         DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(kafkaTemplate);
 
-        // 재시도 정책: 3초 간격으로 최대 3번 재시도
-        FixedBackOff backOff = new FixedBackOff(3000L, 3L);
+        // 지수 백오프(Exponential BackOff) 적용: 3초 시작, 2.0 배수로 최대 3회 재시도
+        //        // 무조건적인 반복보다 서버와 네트워크에 가해지는 부담을 줄입니다.
+        ExponentialBackOff backOff = new ExponentialBackOff(3000L, 2.0);
 
         DefaultErrorHandler errorHandler = new DefaultErrorHandler(recoverer, backOff);
 

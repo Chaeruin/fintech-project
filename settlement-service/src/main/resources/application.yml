@@ -31,6 +31,13 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: "*"
+        partition.assignment.strategy: org.apache.kafka.clients.consumer.CooperativeStickyAssignor
+        # 세션 타임아웃 튜닝: 불필요한 리밸런싱 방지
+        session.timeout.ms: 45000
+        heartbeat.interval.ms: 15000
+        # 한 번에 가져오는 양 조절
+        max.poll.records: 500
+        max.poll.interval.ms: 300000
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
