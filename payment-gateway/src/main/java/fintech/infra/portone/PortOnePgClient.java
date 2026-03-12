@@ -1,10 +1,10 @@
 package fintech.infra.portone;
 
 
-import fintech.common.PgClient;
-import fintech.common.domain.dto.PgTransactionDto;
-import fintech.common.global.exception.CustomException;
-import fintech.common.global.exception.ErrorCode;
+import fintech.infra.pg.PgClient;
+import fintech.dto.PgTransactionDto;
+import fintech.global.exception.CustomException;
+import fintech.global.exception.ErrorCode;
 import fintech.infra.pg.dto.PortOneResponse;
 import java.math.BigDecimal;
 import java.time.Instant;

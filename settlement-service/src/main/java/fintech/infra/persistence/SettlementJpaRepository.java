@@ -1,7 +1,7 @@
 package fintech.infra.persistence;
 
 
-import fintech.common.domain.entity.Settlement;
+import fintech.domain.entity.Settlement;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;

@@ -1,9 +1,9 @@
 package fintech.domain.service;
 
-import fintech.common.domain.entity.Payment;
-import fintech.common.domain.enums.PaymentStatus;
-import fintech.common.global.exception.CustomException;
-import fintech.common.global.exception.ErrorCode;
+import fintech.domain.entity.Payment;
+import fintech.domain.enums.PaymentStatus;
+import fintech.global.exception.CustomException;
+import fintech.global.exception.ErrorCode;
 import java.math.BigDecimal;
 import org.springframework.stereotype.Service;
 

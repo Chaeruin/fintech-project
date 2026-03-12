@@ -1,18 +1,17 @@
 package fintech.application;
 
 
-import fintech.application.dto.PaymentConfirmCommand;
-import fintech.common.domain.dto.event.PaymentCompletedEvent;
-import fintech.common.domain.entity.Payment;
-import fintech.common.domain.enums.PaymentType;
-import fintech.common.global.exception.CustomException;
-import fintech.common.global.exception.ErrorCode;
-import fintech.domain.repository.PaymentJpaRepositoryImpl;
+import fintech.dto.PaymentConfirmCommand;
+import fintech.event.PaymentCompletedEvent;
+import fintech.domain.entity.Payment;
+import fintech.domain.enums.PaymentType;
+import fintech.global.exception.CustomException;
+import fintech.global.exception.ErrorCode;
 import fintech.domain.service.PaymentProcessor;
 import fintech.domain.service.PaymentValidator;
 import fintech.infra.kafka.PaymentEventProducer;
-import fintech.infra.persistence.FailedEventJpaRepository;
-import fintech.infra.persistence.PaymentJpaRepository;
+import fintech.infra.persistence.repository.FailedEventJpaRepository;
+import fintech.infra.persistence.repository.PaymentJpaRepository;
 import fintech.infra.persistence.entity.FailedEvent;
 import fintech.infra.pg.PaymentProcessorFactory;
 import java.math.BigDecimal;

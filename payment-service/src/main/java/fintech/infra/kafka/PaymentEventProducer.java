@@ -1,13 +1,12 @@
 package fintech.infra.kafka;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import fintech.common.domain.dto.event.PaymentCompletedEvent;
-import fintech.infra.persistence.FailedEventJpaRepository;
+import fintech.event.PaymentCompletedEvent;
+import fintech.infra.persistence.repository.FailedEventJpaRepository;
 import fintech.infra.persistence.entity.FailedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Component;
 
 @Slf4j

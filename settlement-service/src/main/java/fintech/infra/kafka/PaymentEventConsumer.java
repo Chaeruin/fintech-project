@@ -2,7 +2,7 @@ package fintech.infra.kafka;
 
 
 import fintech.application.SettlementService;
-import fintech.common.domain.dto.event.PaymentCompletedEvent;
+import fintech.event.PaymentCompletedEvent;
 import fintech.domain.repository.SettlementRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

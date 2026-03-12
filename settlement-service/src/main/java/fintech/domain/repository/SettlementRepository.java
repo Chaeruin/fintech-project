@@ -1,6 +1,6 @@
 package fintech.domain.repository;
 
-import fintech.common.domain.entity.Settlement;
+import fintech.domain.entity.Settlement;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import org.springframework.data.jpa.repository.JpaRepository;

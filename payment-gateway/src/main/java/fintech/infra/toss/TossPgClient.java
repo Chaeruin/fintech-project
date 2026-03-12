@@ -1,9 +1,9 @@
 package fintech.infra.toss;
 
-import fintech.common.PgClient;
-import fintech.common.domain.dto.PgTransactionDto;
-import fintech.common.global.exception.CustomException;
-import fintech.common.global.exception.ErrorCode;
+import fintech.infra.pg.PgClient;
+import fintech.dto.PgTransactionDto;
+import fintech.global.exception.CustomException;
+import fintech.global.exception.ErrorCode;
 import fintech.infra.pg.dto.TossTransactionResponse;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -62,7 +62,7 @@ public class TossPgClient implements PgClient {
                         .queryParam("startDate", start)
                         .queryParam("endDate", end)
                         .build())
-                // 2. 실제 운영시에는 Config에서 설정된 WebClient를 쓰므로 헤더 중복 여부 확인 필요
+                // 실제 운영시에는 Config에서 설정된 WebClient를 쓰므로 헤더 중복 여부 확인 필요
                 .header("Authorization", "Basic " + Base64.getEncoder().encodeToString("TOSS_SECRET_KEY:".getBytes()))
                 .retrieve()
                 .bodyToFlux(TossTransactionResponse.class)
@@ -71,12 +71,12 @@ public class TossPgClient implements PgClient {
                         .pgId(res.paymentKey())
                         .orderId(res.orderId())
                         .status(res.status())
-                        .amount(res.amount()) // 3. long -> BigDecimal 변환
-                        .approvedAt(OffsetDateTime.parse(res.approvedAt()).toLocalDateTime()) // 4. 필드명 통일 (transactionAt)
+                        .amount(res.amount())
+                        .approvedAt(OffsetDateTime.parse(res.approvedAt()).toLocalDateTime())
                         .build())
                 .collectList()
                 .block();
-    } // 5. 중괄호 위치 수정됨
+    }
 
     @Override
     public String getPgType() {

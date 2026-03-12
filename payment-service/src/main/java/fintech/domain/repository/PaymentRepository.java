@@ -1,6 +1,6 @@
 package fintech.domain.repository;
 
-import fintech.common.domain.entity.Payment;
+import fintech.domain.entity.Payment;
 import java.util.Optional;
 
 

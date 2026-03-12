@@ -1,7 +1,7 @@
 package fintech.infra.pg;
 
-import fintech.common.global.exception.CustomException;
-import fintech.common.global.exception.ErrorCode;
+import fintech.global.exception.CustomException;
+import fintech.global.exception.ErrorCode;
 import fintech.domain.service.PaymentProcessor;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

@@ -2,7 +2,7 @@ package fintech.api;
 
 
 import fintech.application.SettlementService;
-import fintech.common.domain.entity.Settlement;
+import fintech.domain.entity.Settlement;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;

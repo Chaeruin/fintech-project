@@ -1,9 +1,9 @@
 package fintech.application;
 
 
-import fintech.common.domain.dto.event.PaymentCompletedEvent;
-import fintech.common.domain.entity.Settlement;
-import fintech.common.global.exception.CustomException;
+import fintech.event.PaymentCompletedEvent;
+import fintech.domain.entity.Settlement;
+import fintech.global.exception.CustomException;
 import fintech.domain.service.SettlementCalculator;
 import fintech.infra.persistence.SettlementJpaRepository;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import fintech.common.global.exception.ErrorCode;
+import fintech.global.exception.ErrorCode;
 
 @Slf4j
 @Service
