@@ -39,6 +39,7 @@ spring:
       # 재시도 간격 설정 (처음엔 100ms, 실패할수록 지수적으로 늘림)
       retry.backoff.ms: 100
       delivery.timeout.ms: 120000 # 최대 2분간 재시도 시도
+      max.in.flight.requests.per.connection: 5
 
 
 # 5. 결제 API 연동
