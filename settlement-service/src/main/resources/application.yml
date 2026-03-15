@@ -6,6 +6,10 @@ spring:
   application:
     name: settlement-service
 
+  threads:
+    virtual:
+      enabled: true
+
   datasource:
     url: jdbc:postgresql://localhost:5433/settlement_db  # DB명 확인 필요
     username: ${POSTGRES_USER:settlement_user}
@@ -56,9 +60,11 @@ management:
   zipkin:
     tracing:
       endpoint: "http://localhost:9411/api/v2/spans"
-  management:
-    endpoints:
-      web:
-        exposure:
-          include: prometheus, health, info
+  endpoints:
+    web:
+      exposure:
+        include: prometheus, health, info  # Prometheus 수집을 위해 필수!
+  metrics:
+    tags:
+      application: ${spring.application.name} # Grafana에서 서비스 구분을 위한 태그
 
