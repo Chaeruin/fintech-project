@@ -33,11 +33,12 @@ public class PaymentEventConsumer {
                 log.warn("[멱등성] 이미 처리된 정산 이벤트입니다. 스킵합니다. OrderId = {}", event.orderId());
                 return;
             }
+            settlementService.processPaymentEvent(event);
 
             settlementService.processPaymentEvent(event);
         } catch (Exception e) {
             log.error("이벤트 처리 중 치명적 오류 발생 (사후 조치 필요): {}", event.orderId(), e);
-            // 예외 다시 던짐 -> Kafka 설정에 따라 재시도 + DLQ
+            // 예외 다시 던짐 -> KafkaRetryConfig 설정에 따라 재시도 + DLQ
             throw e;
         }
     }
