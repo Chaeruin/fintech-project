@@ -1,11 +1,15 @@
 package fintech.application;
 
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import fintech.dto.PaymentEvent;
 import fintech.event.PaymentCompletedEvent;
 import fintech.domain.entity.Settlement;
 import fintech.global.exception.CustomException;
 import fintech.domain.service.SettlementCalculator;
 import fintech.infra.persistence.SettlementJpaRepository;
+import java.time.LocalDate;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -21,6 +25,7 @@ public class SettlementService {
 
     private final SettlementJpaRepository settlementRepository;
     private final SettlementCalculator settlementCalculator;
+    private final ObjectMapper objectMapper;
 
     @Transactional
     public void processPaymentEvent(PaymentCompletedEvent event) {
@@ -61,5 +66,38 @@ public class SettlementService {
                 .settlementAmount(BigDecimal.ZERO)
                 .settlementDate(date)
                 .build();
+    }
+
+    @Transactional
+    public void processSettlement(String payload) {
+        PaymentEvent event = parseEvent(payload);
+
+        // 멱등성 검사 (이미 정산 데이터가 있다면 스킵)
+        if (settlementRepository.existsByOrderId(event.orderId())) {
+            log.info("이미 처리된 주문입니다. OrderId: {}", event.orderId());
+            return;
+        }
+
+        // 정산 데이터 생성 및 저장
+        BigDecimal fee = event.amount().multiply(new BigDecimal("0.03")); // 예: 수수료 3%
+        BigDecimal settlementAmount = event.amount().subtract(fee);
+
+        Settlement settlement = Settlement.builder()
+                .orderId(event.orderId())
+                .settlementAmount(event.amount())
+                .totalFee(fee)
+                .settlementAmount(settlementAmount)
+                .settlementDate(LocalDateTime.now())
+                .build();
+
+        settlementRepository.save(settlement);
+    }
+
+    private PaymentEvent parseEvent(String payload) {
+        try {
+            return objectMapper.readValue(payload, PaymentEvent.class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("이벤트 파싱 실패", e);
+        }
     }
 }

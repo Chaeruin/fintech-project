@@ -31,6 +31,9 @@ public class Settlement {
     private Long id;
 
     @Column(nullable = false)
+    private String orderId;
+
+    @Column(nullable = false)
     private String merchantId;
 
     @Column(nullable = false)
@@ -49,8 +52,9 @@ public class Settlement {
     private SettlementStatus status;
 
     @Builder
-    public Settlement(String merchantId, BigDecimal totalAmount, BigDecimal totalFee,
+    public Settlement(String orderId, String merchantId, BigDecimal totalAmount, BigDecimal totalFee,
                       BigDecimal settlementAmount, LocalDateTime settlementDate) {
+        this.orderId = orderId;
         this.merchantId = merchantId;
         this.totalAmount = totalAmount;
         this.totalFee = totalFee;
