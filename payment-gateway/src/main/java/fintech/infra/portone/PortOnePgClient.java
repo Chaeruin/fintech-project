@@ -6,7 +6,6 @@ import fintech.dto.PgTransactionDto;
 import fintech.global.exception.CustomException;
 import fintech.global.exception.ErrorCode;
 import fintech.infra.pg.dto.PortOneResponse;
-import fintech.infra.toss.TossPgClient.TossConfirmRequest;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import java.math.BigDecimal;
