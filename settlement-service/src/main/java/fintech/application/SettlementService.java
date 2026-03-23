@@ -9,6 +9,7 @@ import fintech.domain.entity.Settlement;
 import fintech.global.exception.CustomException;
 import fintech.domain.service.SettlementCalculator;
 import fintech.infra.persistence.SettlementJpaRepository;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
@@ -69,28 +70,31 @@ public class SettlementService {
     }
 
     @Transactional
-    public void processSettlement(String payload) {
-        PaymentEvent event = parseEvent(payload);
-
-        // 멱등성 검사 (이미 정산 데이터가 있다면 스킵)
+    public void processSettlement(PaymentEvent event) {
+        log.info("[정산 프로세스 시작] 주문번호: {}", event.orderId());
+        //멱등성 체크
         if (settlementRepository.existsByOrderId(event.orderId())) {
-            log.info("이미 처리된 주문입니다. OrderId: {}", event.orderId());
+            log.warn("[정산 중복 방지] 이미 처리된 주문입니다. 주문번호: {}", event.orderId());
             return;
         }
 
-        // 정산 데이터 생성 및 저장
-        BigDecimal fee = event.amount().multiply(new BigDecimal("0.03")); // 예: 수수료 3%
+        // 수수료 및 정산 금액 계산
+        BigDecimal feeRate = new BigDecimal("0.03");
+        BigDecimal fee = event.amount().multiply(feeRate).setScale(0, RoundingMode.HALF_UP);
         BigDecimal settlementAmount = event.amount().subtract(fee);
 
+        // 3. 정산 엔티티 생성 및 저장
         Settlement settlement = Settlement.builder()
                 .orderId(event.orderId())
                 .settlementAmount(event.amount())
-                .totalFee(fee)
+                .totalAmount(fee)
                 .settlementAmount(settlementAmount)
                 .settlementDate(LocalDateTime.now())
                 .build();
 
         settlementRepository.save(settlement);
+
+        log.info("[정산 완료] 주문번호: {}, 정산액: {}, 수수료: {}", event.orderId(), settlementAmount, fee);
     }
 
     private PaymentEvent parseEvent(String payload) {

@@ -8,4 +8,6 @@ public interface FailedEventJpaRepository extends JpaRepository<FailedEvent, Lon
     List<FailedEvent> findAllByOrderIdIn(List<String> orderIds);
 
     List<FailedEvent> findAllByOrderIdInAndStatus(List<String> orderIds, String status);
+
+    List<FailedEvent> findTop10ByStatusOrderByCreatedAtAsc(String status);
 }

@@ -1,5 +1,7 @@
 package fintech.application;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import fintech.dto.PaymentEvent;
 import fintech.infra.alert.AlertService;
 import fintech.infra.persistence.SettlementJpaRepository;
 import fintech.infra.persistence.entity.FailedEvent;
@@ -11,7 +13,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.*;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,9 +25,10 @@ public class ReconciliationService {
 
     private final PaymentJpaRepository paymentRepository;
     private final SettlementJpaRepository settlementRepository;
-    private final FailedEventJpaRepository failedEventRepository; // 추가된 Repository
+    private final FailedEventJpaRepository failedEventRepository;
     private final AlertService alertService;
     private final SettlementService settlementService;
+    private final ObjectMapper objectMapper;
 
     @Transactional(readOnly = true)
     public void reconcileDaily(LocalDate date) {
@@ -42,14 +45,9 @@ public class ReconciliationService {
         BigDecimal diff = totalPaymentAmount.subtract(totalSettledAmount);
 
         if (diff.compareTo(BigDecimal.ZERO) == 0 && paymentOrderIds.size() == settledOrderIds.size()) {
-            log.info("[대사 성공] 데이터가 100% 일치합니다. 건수: {}, 금액: {}", paymentOrderIds.size(), totalPaymentAmount);
+            log.info("[대사 성공] 데이터 일치. 금액: {}", totalPaymentAmount);
         } else {
-            log.error("[대사 실패] 불일치 발생! 금액 차액: {}, 건수 차이: {}", diff, (paymentOrderIds.size() - settledOrderIds.size()));
-
-            // 역추적 로직 실행 (누락된 주문 ID 추출)
             List<String> missingIds = findMissingOrderIds(paymentOrderIds, settledOrderIds);
-
-            // FailedEvent 테이블과 대조하여 원인 파악
             traceAndRetry(date, missingIds, totalPaymentAmount, totalSettledAmount, diff);
         }
     }
@@ -62,10 +60,10 @@ public class ReconciliationService {
     }
 
     private void traceAndRetry(LocalDate date, List<String> missingIds, BigDecimal target, BigDecimal actual, BigDecimal diff) {
-        // 1. 실패 기록 확인
+        // 실패 기록 확인
         List<FailedEvent> failedEvents = failedEventRepository.findAllByOrderIdIn(missingIds);
 
-        // 2. 알림 발송 (현황 보고)
+        // 알림 발송
         sendDiscrepancyAlert(date, missingIds, failedEvents, target, actual, diff);
 
         // 3. 자동 재처리 로직 (실패 기록이 있는 건들에 대해)
@@ -73,8 +71,9 @@ public class ReconciliationService {
             log.info("[재처리] {}건의 누락 데이터 재처리 시도 중...", failedEvents.size());
             for (FailedEvent event : failedEvents) {
                 try {
-                    // 실제 정산 처리 서비스 호출 (메시지 컨슈밍 로직과 동일한 로직)
-                    settlementService.processSettlement(event.getPayload());
+                    PaymentEvent paymentEvent = objectMapper.readValue(event.getPayload(), PaymentEvent.class);
+                    // 실제 정산 처리 서비스 호출
+                    settlementService.processSettlement(paymentEvent);
 
                     // 성공 시 실패 기록 삭제 또는 상태 변경
                     failedEventRepository.delete(event);

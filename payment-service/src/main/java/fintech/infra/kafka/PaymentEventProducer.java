@@ -60,4 +60,12 @@ public class PaymentEventProducer {
             log.error("실패 이벤트 DB 저장 중 치명적 에러 발생!", e);
         }
     }
+
+    public void retry(FailedEvent failedEvent) {
+        kafkaTemplate.send(
+                failedEvent.getTopic(),
+                failedEvent.getEventKey(),
+                failedEvent.getPayload()
+        );
+    }
 }
