@@ -5,6 +5,8 @@ import fintech.dto.PgTransactionDto;
 import fintech.global.exception.CustomException;
 import fintech.global.exception.ErrorCode;
 import fintech.infra.pg.dto.TossTransactionResponse;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -29,13 +31,20 @@ public class TossPgClient implements PgClient {
     private final WebClient webClient;
 
     @Override
+    @Retry(name = "pgService", fallbackMethod = "fallbackConfirm")
+    @CircuitBreaker(name = "pgService")
     public void confirm(String paymentKey, String orderId, BigDecimal amount) {
+        log.info("[PG 승인 요청] OrderId: {}, Amount: {}", orderId, amount);
+
         webClient.post()
-                .uri("/v1/payments/confirm")
+                .uri("/api/v1/payments/confirm")
                 .bodyValue(new TossConfirmRequest(paymentKey, orderId, amount))
                 .retrieve()
+                .onStatus(HttpStatusCode::isError, response ->
+                        response.bodyToMono(String.class).flatMap(errorBody ->
+                                Mono.error(new RuntimeException("PG API Error: " + errorBody))))
                 .bodyToMono(Void.class)
-                .block();
+                .block(); // 동기 방식으로 대기
     }
 
     @Override

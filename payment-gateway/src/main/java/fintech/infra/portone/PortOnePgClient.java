@@ -6,6 +6,9 @@ import fintech.dto.PgTransactionDto;
 import fintech.global.exception.CustomException;
 import fintech.global.exception.ErrorCode;
 import fintech.infra.pg.dto.PortOneResponse;
+import fintech.infra.toss.TossPgClient.TossConfirmRequest;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -32,14 +35,20 @@ public class PortOnePgClient implements PgClient {
 
     // 결제 승인 로직
     @Override
+    @Retry(name = "pgService", fallbackMethod = "fallbackConfirm")
+    @CircuitBreaker(name = "pgService")
     public void confirm(String paymentKey, String orderId, BigDecimal amount) {
-        // 포트원 스펙에 맞는 엔드포인트와 데이터 구조
+        log.info("[PG 승인 요청] OrderId: {}, Amount: {}", orderId, amount);
+
         webClient.post()
-                .uri("/payments/confirm")
+                .uri("/api/v1/payments/confirm")
                 .bodyValue(new PortOneConfirmRequest(paymentKey, amount))
                 .retrieve()
+                .onStatus(HttpStatusCode::isError, response ->
+                        response.bodyToMono(String.class).flatMap(errorBody ->
+                                Mono.error(new RuntimeException("PG API Error: " + errorBody))))
                 .bodyToMono(Void.class)
-                .block();
+                .block(); // 동기 방식으로 대기
     }
 
     // 결제 취소 로직

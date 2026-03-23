@@ -32,3 +32,21 @@ spring:
       # 도커 환경변수가 없을 때를 대비한 기본값
       host: ${SPRING_REDIS_HOST:localhost}
       port: 6379
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        registerHealthIndicator: true # Actuator
+        slidingWindowSize: 10         # 최근 10개의 요청을 기준
+        failureRateThreshold: 50      # 실패율 50% 이상 시 서킷 OPEN
+        waitDurationInOpenState: 10s  # OPEN 후 10초 뒤에 HALF_OPEN으로 변경
+        permittedNumberOfCallsInHalfOpenState: 3 # HALF_OPEN 상태에서 시도할 횟수
+    instances:
+      pgService:
+        baseConfig: default
+  retry:
+    instances:
+      pgService:
+        maxAttempts: 3                # 최대 3번 시도
+        waitDuration: 500ms           # 재시도 간격

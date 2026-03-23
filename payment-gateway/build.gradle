@@ -24,6 +24,10 @@ dependencies {
 
     // Kafka/WebClient 추적을 위한 연동 의존성
     implementation 'io.micrometer:micrometer-observation:1.13.2'
+
+    // Resilience4j 의존성
+    implementation 'io.github.resilience4j:resilience4j-spring-boot3'
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
 }
 
 bootJar { enabled = true }
