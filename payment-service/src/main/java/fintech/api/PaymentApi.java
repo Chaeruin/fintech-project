@@ -20,7 +20,7 @@ public class PaymentApi {
     public ResponseEntity<String> confirmPayment(
             @RequestBody PaymentConfirmCommand command
     ) {
-        paymentService.completePayment(command);
+        paymentService.completePayment(command.paymentKey(), command);
         return ResponseEntity.ok("결제가 성공적으로 완료되었습니다.");
     }
 }

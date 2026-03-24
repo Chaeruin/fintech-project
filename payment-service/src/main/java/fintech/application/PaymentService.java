@@ -21,8 +21,11 @@ import fintech.infra.persistence.entity.FailedEvent;
 import fintech.infra.pg.PaymentProcessorFactory;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,23 +42,47 @@ public class PaymentService {
     private final PaymentJpaRepository paymentRepository;
     private final IdempotencyRepository idempotencyRepository;
     private final ObjectMapper objectMapper;
+    private final RedissonClient redissonClient;
 
     @Transactional
     public void completePayment(String idempotencyKey, PaymentConfirmCommand command) {
-        // 멱등성 체크
-        if (idempotencyRepository.existsByIdempotencyKey(idempotencyKey)) {
-            log.warn("[Idempotency] 중복된 결제 요청 차단: Key={}", idempotencyKey);
-            throw new CustomException(ErrorCode.DUPLICATE_PAYMENT);
-        }
+        // Idempotency key 기반 분산락 획득
+        String lockKey = "lock:payment:" + idempotencyKey;
+        RLock lock = redissonClient.getLock(lockKey);
 
+        try {
+            // 최대 5초 대기, 10초 후 자동 해제
+            if (!lock.tryLock(5, 10, TimeUnit.SECONDS)) {
+                log.warn("[결제 중복] 락 획득 실패: Key={}", idempotencyKey);
+                throw new CustomException(ErrorCode.DUPLICATE_PAYMENT);
+            }
+
+            try {
+                // 락 획득 후 다시 한번 DB 멱등성 체크
+                if (idempotencyRepository.existsByIdempotencyKey(idempotencyKey)) {
+                    throw new CustomException(ErrorCode.DUPLICATE_PAYMENT);
+                }
+                // 실결제 및 Outbox 저장
+                executePaymentProcess(idempotencyKey, command);
+
+            } finally {
+                if (lock.isHeldByCurrentThread()) lock.unlock();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("결제 처리 중 인터럽트 발생");
+        }
+    }
+
+    private void executePaymentProcess(String idempotencyKey, PaymentConfirmCommand command) {
         log.info("[Payment] 결제 프로세스 시작: OrderId={}, Key={}", command.orderId(), idempotencyKey);
 
-        // 2. 데이터 조회 및 사전 검증
+        // 데이터 조회 및 사전 검증
         Payment payment = paymentRepository.findByOrderId(command.orderId())
                 .orElseThrow(() -> new CustomException(ErrorCode.PAYMENT_NOT_FOUND));
         paymentValidator.validateAction(payment, command.amount());
 
-        // 3. PG사 승인 요청 (외부 통신)
+        // PG사 승인 요청
         PaymentProcessor processor = paymentProcessorFactory.getProcessor(command.pgType());
         String pgConfirmId;
         try {
