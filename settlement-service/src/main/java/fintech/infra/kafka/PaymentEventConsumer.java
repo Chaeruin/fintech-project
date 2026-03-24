@@ -8,6 +8,7 @@ import fintech.event.PaymentCompletedEvent;
 import fintech.domain.repository.SettlementRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
@@ -38,8 +39,8 @@ public class PaymentEventConsumer {
             settlementService.processPaymentEvent(event);
             PaymentEvent paymentEvent = settlementService.parseEvent(event.paymentId());
             settlementService.createSettlement(paymentEvent);
-        } catch (Exception e) {
-            log.error("이벤트 처리 중 치명적 오류 발생 (사후 조치 필요): {}", event.orderId(), e);
+        } catch (DataIntegrityViolationException e) {
+            log.error("이벤트 처리 중 중복 정산 오류 발생 (사후 조치 필요): {}", event.orderId(), e);
             // 예외 다시 던짐 -> KafkaRetryConfig 설정에 따라 재시도 + DLQ
             throw e;
         }
