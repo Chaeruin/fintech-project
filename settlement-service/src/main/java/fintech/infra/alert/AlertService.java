@@ -8,6 +8,6 @@ import org.springframework.stereotype.Service;
 public class AlertService implements AlertProvider {
     @Override
     public void sendAlert(String message) {
-
+        // 임시 구현
     }
 }
