@@ -2,6 +2,7 @@ package fintech.application;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import fintech.aop.DistributedLock;
 import fintech.application.dto.PaymentConfirmCommand;
 import fintech.domain.entity.IdempotencyKey;
 import fintech.domain.entity.OutboxEvent;
@@ -10,7 +11,6 @@ import fintech.domain.repository.OutboxRepository;
 import fintech.event.PaymentCompletedEvent;
 import fintech.domain.entity.Payment;
 import fintech.domain.enums.PaymentType;
-import fintech.global.aop.DistributedLock;
 import fintech.global.exception.CustomException;
 import fintech.global.exception.ErrorCode;
 import fintech.domain.service.PaymentProcessor;
@@ -22,13 +22,9 @@ import fintech.infra.persistence.entity.FailedEvent;
 import fintech.infra.pg.PaymentProcessorFactory;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.redisson.api.RLock;
-import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -43,7 +39,6 @@ public class PaymentService {
     private final PaymentJpaRepository paymentRepository;
     private final IdempotencyRepository idempotencyRepository;
     private final ObjectMapper objectMapper;
-    private final RedissonClient redissonClient;
 
     @DistributedLock(key = "#command.paymentKey")
     public void completePayment(String idempotencyKey, PaymentConfirmCommand command) {

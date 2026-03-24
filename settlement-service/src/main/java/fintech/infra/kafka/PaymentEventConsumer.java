@@ -2,7 +2,6 @@ package fintech.infra.kafka;
 
 
 import fintech.application.SettlementService;
-import fintech.domain.entity.Payment;
 import fintech.dto.PaymentEvent;
 import fintech.event.PaymentCompletedEvent;
 import fintech.domain.repository.SettlementRepository;
@@ -38,7 +37,7 @@ public class PaymentEventConsumer {
             }
             settlementService.processPaymentEvent(event);
             PaymentEvent paymentEvent = settlementService.parseEvent(event.paymentId());
-            settlementService.createSettlement(paymentEvent);
+            settlementService.processSettlement(paymentEvent);
         } catch (DataIntegrityViolationException e) {
             log.error("이벤트 처리 중 중복 정산 오류 발생 (사후 조치 필요): {}", event.orderId(), e);
             // 예외 다시 던짐 -> KafkaRetryConfig 설정에 따라 재시도 + DLQ

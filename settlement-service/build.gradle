@@ -6,7 +6,7 @@ plugins {
 dependencies {
     implementation project(':payment-common')
     implementation project(':payment-gateway')
-    implementation project(':payment-service')
+    implementation project(':infra-lock')
 
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
@@ -24,9 +24,6 @@ dependencies {
 
     // Kafka/WebClient 추적을 위한 연동 의존성
     implementation 'io.micrometer:micrometer-observation:1.13.2'
-
-    // Redis 기반 분산락 적용
-    implementation 'org.redisson:redisson-spring-boot-starter:4.3.0'
 }
 
 jar { enabled = true }

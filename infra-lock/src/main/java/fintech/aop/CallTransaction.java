@@ -1,4 +1,4 @@
-package fintech.global.aop;
+package fintech.aop;
 
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.springframework.stereotype.Component;

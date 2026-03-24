@@ -3,19 +3,14 @@ package fintech.application;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import fintech.domain.entity.Payment;
+import fintech.aop.DistributedLock;
 import fintech.dto.PaymentEvent;
 import fintech.event.PaymentCompletedEvent;
 import fintech.domain.entity.Settlement;
-import fintech.global.aop.DistributedLock;
 import fintech.global.exception.CustomException;
 import fintech.domain.service.SettlementCalculator;
 import fintech.infra.persistence.SettlementJpaRepository;
 import java.math.RoundingMode;
-import java.time.LocalDate;
-import java.util.concurrent.TimeUnit;
-import org.redisson.api.RLock;
-import org.redisson.api.RedissonClient;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -32,7 +27,6 @@ public class SettlementService {
     private final SettlementJpaRepository settlementRepository;
     private final SettlementCalculator settlementCalculator;
     private final ObjectMapper objectMapper;
-    private final RedissonClient redissonClient;
 
     @Transactional
     public void processPaymentEvent(PaymentCompletedEvent event) {
@@ -45,7 +39,8 @@ public class SettlementService {
         // 기존 정산 마스터 조회 혹은 생성
         Settlement settlement = settlementRepository.findByMerchantIdAndSettlementDate(
                         event.merchantId(), settlementDate)
-                .orElseGet(() -> createNewSettlement(event.merchantId(), event.orderId(), settlementDate));
+                .orElseGet(() -> createNewSettlement(event.merchantId(), event.orderId(), settlementDate,
+                        BigDecimal.ZERO, BigDecimal.ZERO));
 
         // 금액 합산 and 수수료 계산
         BigDecimal fee = settlementCalculator.calculateFee(event.amount());
@@ -65,13 +60,14 @@ public class SettlementService {
                 .orElseThrow(() -> new CustomException(ErrorCode.SETTLEMENT_NOT_FOUND));
     }
 
-    private Settlement createNewSettlement(String merchantId, String orderId, LocalDateTime date) {
+    private Settlement createNewSettlement(String merchantId, String orderId, LocalDateTime date,
+                                           BigDecimal fee, BigDecimal settlementAmount) {
         return Settlement.builder()
                 .merchantId(merchantId)
                 .orderId(orderId)
-                .totalAmount(BigDecimal.ZERO)
-                .totalFee(BigDecimal.ZERO)
-                .settlementAmount(BigDecimal.ZERO)
+                .totalAmount(fee)
+                .totalFee(fee)
+                .settlementAmount(settlementAmount)
                 .settlementDate(date)
                 .build();
     }
@@ -90,7 +86,8 @@ public class SettlementService {
         BigDecimal settlementAmount = event.amount().subtract(fee);
 
         // 정산 엔티티 생성 및 저장
-        Settlement settlement = createNewSettlement(event.orderId(), event.merchantId(), event.createdAt());
+        Settlement settlement = createNewSettlement(event.orderId(), event.merchantId(), event.createdAt(),
+                fee, settlementAmount);
 
         settlementRepository.save(settlement);
 

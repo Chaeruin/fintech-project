@@ -1,4 +1,4 @@
-package fintech.global.aop;
+package fintech.aop;
 
 import java.lang.annotation.*;
 import java.util.concurrent.TimeUnit;

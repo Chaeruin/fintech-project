@@ -1,4 +1,4 @@
-package fintech.global.aop;
+package fintech.aop;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
