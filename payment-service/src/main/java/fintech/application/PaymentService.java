@@ -15,13 +15,8 @@ import fintech.global.exception.CustomException;
 import fintech.global.exception.ErrorCode;
 import fintech.domain.service.PaymentProcessor;
 import fintech.domain.service.PaymentValidator;
-import fintech.infra.kafka.PaymentEventProducer;
-import fintech.infra.persistence.repository.FailedEventJpaRepository;
 import fintech.infra.persistence.repository.PaymentJpaRepository;
-import fintech.infra.persistence.entity.FailedEvent;
 import fintech.infra.pg.PaymentProcessorFactory;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,8 +28,6 @@ public class PaymentService {
 
     private final PaymentProcessorFactory paymentProcessorFactory; // PG사 선택기
     private final PaymentValidator paymentValidator;
-    private final PaymentEventProducer paymentEventProducer;
-    private final FailedEventJpaRepository failedEventRepository;
     private final OutboxRepository outboxRepository;
     private final PaymentJpaRepository paymentRepository;
     private final IdempotencyRepository idempotencyRepository;
@@ -74,7 +67,7 @@ public class PaymentService {
             // Kafka 직접 발행 대신 Outbox에 저장 !!!!
             PaymentCompletedEvent event = new PaymentCompletedEvent(
                     pgConfirmId, payment.getOrderId(), payment.getAmount(),
-                    payment.getType(), payment.getMerchantId(), payment.getCreatedAt()
+                    payment.getType(), payment.getMerchantId(), payment.getCreatedAt(), payment.getTransactionKey()
             );
             String payload = objectMapper.writeValueAsString(event);
 
@@ -99,30 +92,5 @@ public class PaymentService {
             // 취소 실패 시 '불일치 알림' 대상이 됨 (운영 절차 3번)
             log.error("Critical: 보상 트랜잭션 실패! 수동 확인 필요. PG_ID={}", pgConfirmId, cancelEx);
         }
-    }
-
-    private void saveFailedEvent(String orderId, String pgConfirmId, String merchantId, PaymentType type, BigDecimal amount) {
-        // 재처리 시 사용할 이벤트 객체 생성
-        PaymentCompletedEvent event = PaymentCompletedEvent.builder()
-                .paymentId(pgConfirmId)
-                .orderId(orderId)
-                .amount(amount)
-                .paymentType(type)
-                .merchantId(merchantId)
-                .completedAt(LocalDateTime.now())
-                .build();
-
-        // 객체를 JSON 문자열(payload)로 변환
-        String payload = String.format("{\"orderId\":\"%s\", \"amount\":%s}", orderId, amount);
-
-        // 생성자 규격에 맞춰 저장 (topic, eventKey, payload, errorMessage)
-        FailedEvent failedEvent = new FailedEvent(
-                "payment-completed-topic",
-                orderId,
-                payload,
-                "INTERNAL_PROCESS_ERROR"
-        );
-
-        failedEventRepository.save(failedEvent);
     }
 }
