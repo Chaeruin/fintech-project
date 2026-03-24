@@ -24,6 +24,9 @@ dependencies {
 
     // Kafka/WebClient 추적을 위한 연동 의존성
     implementation 'io.micrometer:micrometer-observation:1.13.2'
+
+    // Redis 기반 분산락 적용
+    implementation 'org.redisson:redisson-spring-boot-starter:3.24.3'
 }
 
 jar { enabled = true }
