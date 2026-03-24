@@ -1,4 +1,4 @@
-package fintech.infra.pg.dto;
+package fintech.infra.pg.portone;
 
 import java.math.BigDecimal;
 import lombok.Builder;

@@ -1,19 +1,16 @@
-package fintech.infra.portone;
+package fintech.infra.pg.toss;
 
-
-import fintech.infra.pg.PgClient;
+import fintech.infra.pg.client.PgClient;
 import fintech.dto.PgTransactionDto;
 import fintech.global.exception.CustomException;
 import fintech.global.exception.ErrorCode;
-import fintech.infra.pg.dto.PortOneResponse;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.ZoneId;
+import java.time.OffsetDateTime;
+import java.util.Base64; // 1. Base64 임포트 추가
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -27,12 +24,11 @@ import reactor.core.publisher.Mono;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class PortOnePgClient implements PgClient {
+public class TossPgClient implements PgClient {
 
-    @Qualifier("portonePaymentWebClient")
+    @Qualifier("tossPaymentWebClient")
     private final WebClient webClient;
 
-    // 결제 승인 로직
     @Override
     @Retry(name = "pgService", fallbackMethod = "fallbackConfirm")
     @CircuitBreaker(name = "pgService")
@@ -41,7 +37,7 @@ public class PortOnePgClient implements PgClient {
 
         webClient.post()
                 .uri("/api/v1/payments/confirm")
-                .bodyValue(new PortOneConfirmRequest(paymentKey, amount))
+                .bodyValue(new TossConfirmRequest(paymentKey, orderId, amount))
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, response ->
                         response.bodyToMono(String.class).flatMap(errorBody ->
@@ -50,7 +46,6 @@ public class PortOnePgClient implements PgClient {
                 .block(); // 동기 방식으로 대기
     }
 
-    // 결제 취소 로직
     @Override
     public void cancel(String pgConfirmId, String reason) {
         webClient.post()
@@ -67,37 +62,39 @@ public class PortOnePgClient implements PgClient {
 
     @Override
     public List<PgTransactionDto> fetchSuccessHistory(LocalDate date) {
-        // 포트원 API: 결제 완료 상태인 내역을 기간별로 조회
-        long from = date.atStartOfDay(ZoneId.systemDefault()).toEpochSecond();
-        long to = date.atTime(LocalTime.MAX).atZone(ZoneId.systemDefault()).toEpochSecond();
+        String start = date.atStartOfDay().toString();
+        String end = date.atTime(LocalTime.MAX).toString();
 
         return webClient.get()
-                .uri(uriBuilder -> uriBuilder.path("/payments/status/paid")
-                        .queryParam("from", from)
-                        .queryParam("to", to)
+                .uri(uriBuilder -> uriBuilder.path("/v1/transactions")
+                        .queryParam("startDate", start)
+                        .queryParam("endDate", end)
                         .build())
-                .header("Authorization", "PortOne_Access_Token") // 실제 토큰 로직 필요
+                // 실제 운영시에는 Config에서 설정된 WebClient를 쓰므로 헤더 중복 여부 확인 필요
+                .header("Authorization", "Basic " + Base64.getEncoder().encodeToString("TOSS_SECRET_KEY:".getBytes()))
                 .retrieve()
-                .bodyToFlux(PortOneResponse.class)
+                .bodyToFlux(TossTransactionResponse.class)
+                .filter(res -> "DONE".equals(res.status()))
                 .map(res -> PgTransactionDto.builder()
-                        .pgId(res.imp_uid())
-                        .orderId(res.merchant_uid())
+                        .pgId(res.paymentKey())
+                        .orderId(res.orderId())
+                        .status(res.status())
                         .amount(res.amount())
-                        .status(res.status().toUpperCase())
-                        .approvedAt(LocalDateTime.ofInstant(Instant.ofEpochSecond(res.paid_at()), ZoneId.systemDefault()))
+                        .approvedAt(OffsetDateTime.parse(res.approvedAt()).toLocalDateTime())
                         .build())
                 .collectList()
                 .block();
     }
 
     @Override
-    public String getPgType() { return "PORTONE"; }
+    public String getPgType() {
+        return "TOSS";
+    }
 
-    // Fallback 메서드
     public void fallbackConfirm(String paymentKey, String orderId, BigDecimal amount, Throwable t) {
-        log.error("PortOne PG사 서킷 오픈 혹은 타임아웃 발생: {}", t.getMessage());
+        log.error("TOSS PG사 서킷 오픈 혹은 타임아웃 발생: {}", t.getMessage());
         throw new CustomException(ErrorCode.PG_TEMPORARY_UNAVAILABLE);
     }
 
-    private record PortOneConfirmRequest(String imp_uid, BigDecimal amount) {}
+    private record TossConfirmRequest(String paymentKey, String orderId, BigDecimal amount) {}
 }

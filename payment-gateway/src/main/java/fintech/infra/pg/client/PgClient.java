@@ -1,4 +1,4 @@
-package fintech.infra.pg;
+package fintech.infra.pg.client;
 
 import fintech.dto.PgTransactionDto;
 import java.math.BigDecimal;

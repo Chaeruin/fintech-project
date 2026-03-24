@@ -1,4 +1,4 @@
-package fintech.dto;
+package fintech.application.dto;
 
 import java.math.BigDecimal;
 

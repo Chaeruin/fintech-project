@@ -1,7 +1,7 @@
 package fintech.api;
 
 import fintech.application.PaymentService;
-import fintech.dto.PaymentConfirmCommand;
+import fintech.application.dto.PaymentConfirmCommand;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;

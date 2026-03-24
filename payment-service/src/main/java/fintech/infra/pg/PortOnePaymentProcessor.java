@@ -1,7 +1,7 @@
 package fintech.infra.pg;
 
 import fintech.domain.service.PaymentProcessor;
-import fintech.infra.portone.PortOnePgClient;
+import fintech.infra.pg.portone.PortOnePgClient;
 import java.math.BigDecimal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

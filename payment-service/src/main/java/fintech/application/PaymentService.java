@@ -1,7 +1,7 @@
 package fintech.application;
 
 
-import fintech.dto.PaymentConfirmCommand;
+import fintech.application.dto.PaymentConfirmCommand;
 import fintech.event.PaymentCompletedEvent;
 import fintech.domain.entity.Payment;
 import fintech.domain.enums.PaymentType;

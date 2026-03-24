@@ -1,7 +1,7 @@
 package fintech.application;
 
 
-import fintech.infra.pg.PgClient;
+import fintech.infra.pg.client.PgClient;
 import fintech.dto.PgTransactionDto;
 import fintech.domain.entity.Payment;
 import fintech.infra.alert.AlertProvider;
@@ -12,7 +12,6 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 @Service

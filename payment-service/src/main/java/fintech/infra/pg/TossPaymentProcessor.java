@@ -1,7 +1,7 @@
 package fintech.infra.pg;
 
 import fintech.domain.service.PaymentProcessor;
-import fintech.infra.toss.TossPgClient;
+import fintech.infra.pg.toss.TossPgClient;
 import java.math.BigDecimal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
