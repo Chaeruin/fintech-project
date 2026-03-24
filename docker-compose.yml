@@ -38,6 +38,13 @@ services:
       - "6379:6379"
     networks:
       - toss-network
+  settlement-redis:
+    image: redis:7-alpine
+    container_name: settlement-redis
+    ports:
+      - "6377:6379"
+    networks:
+      - toss-network
 
   zookeeper: # Kafka를 위한 주키퍼 추가
     image: bitnami/zookeeper:latest
@@ -86,8 +93,11 @@ services:
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://payment-db:5432/payment_db
       - SPRING_DATA_REDIS_HOST=payment-redis
+      - SPRING_DATA_REDIS_PORT=6379
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans
+    depends_on:
+      - payment-redis
     networks:
       - toss-network
 
@@ -97,7 +107,11 @@ services:
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://settlement-db:5432/settlement_db
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - SPRING_DATA_REDIS_HOST=settlement-redis
+      - SPRING_DATA_REDIS_PORT=6379
       - MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans
+    depends_on:
+      - settlement-redis
     networks:
       - toss-network
 

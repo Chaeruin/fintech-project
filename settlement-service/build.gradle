@@ -26,7 +26,7 @@ dependencies {
     implementation 'io.micrometer:micrometer-observation:1.13.2'
 
     // Redis 기반 분산락 적용
-    implementation 'org.redisson:redisson-spring-boot-starter'
+    implementation 'org.redisson:redisson-spring-boot-starter:4.3.0'
 }
 
 jar { enabled = true }
