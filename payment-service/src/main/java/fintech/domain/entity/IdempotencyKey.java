@@ -25,4 +25,12 @@ public class IdempotencyKey {
     private String idempotencyKey;
 
     private String responseBody;
+
+    private Long paymentId;
+
+    public IdempotencyKey(String idempotencyKey, Long paymentId) {
+        this.idempotencyKey = idempotencyKey;
+        this.responseBody = "SUCCESS";
+        this.paymentId = paymentId;
+    }
 }

@@ -1,7 +1,12 @@
 package fintech.application;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import fintech.application.dto.PaymentConfirmCommand;
+import fintech.domain.entity.IdempotencyKey;
+import fintech.domain.entity.OutboxEvent;
+import fintech.domain.repository.IdempotencyRepository;
+import fintech.domain.repository.OutboxRepository;
 import fintech.event.PaymentCompletedEvent;
 import fintech.domain.entity.Payment;
 import fintech.domain.enums.PaymentType;
@@ -27,27 +32,31 @@ import org.springframework.transaction.annotation.Transactional;
 public class PaymentService {
 
     private final PaymentProcessorFactory paymentProcessorFactory; // PG사 선택기
-    private final PaymentJpaRepository paymentRepository;         // DB 저장소
     private final PaymentValidator paymentValidator;
     private final PaymentEventProducer paymentEventProducer;
     private final FailedEventJpaRepository failedEventRepository;
+    private final OutboxRepository outboxRepository;
+    private final PaymentJpaRepository paymentRepository;
+    private final IdempotencyRepository idempotencyRepository;
+    private final ObjectMapper objectMapper;
 
     @Transactional
-    public void completePayment(PaymentConfirmCommand command) {
-        log.info("[PaymentService] 결제 프로세스 시작: OrderId={}, PG={}", command.orderId(), command.pgType());
+    public void completePayment(String idempotencyKey, PaymentConfirmCommand command) {
+        // 멱등성 체크
+        if (idempotencyRepository.existsByIdempotencyKey(idempotencyKey)) {
+            log.warn("[Idempotency] 중복된 결제 요청 차단: Key={}", idempotencyKey);
+            throw new CustomException(ErrorCode.DUPLICATE_PAYMENT);
+        }
 
-        // 기존 결제 대기 데이터 조회 - 사전 검증 (계정계 원장 확인)
+        log.info("[Payment] 결제 프로세스 시작: OrderId={}, Key={}", command.orderId(), idempotencyKey);
+
+        // 2. 데이터 조회 및 사전 검증
         Payment payment = paymentRepository.findByOrderId(command.orderId())
                 .orElseThrow(() -> new CustomException(ErrorCode.PAYMENT_NOT_FOUND));
-
-        // 비즈니스 규칙 검증
         paymentValidator.validateAction(payment, command.amount());
 
-        // PG사에 맞는 Processor 선택 (채널계 어댑터)
+        // 3. PG사 승인 요청 (외부 통신)
         PaymentProcessor processor = paymentProcessorFactory.getProcessor(command.pgType());
-
-        // 실제 PG사 승인 요청 (내부적으로 PgClient의 confirm 호출)
-        // 성공 시 PG 승인번호(pgConfirmId)를 반환
         String pgConfirmId;
         try {
             pgConfirmId = processor.pay(command.amount(), command.orderId());
@@ -56,34 +65,30 @@ public class PaymentService {
             throw new CustomException(ErrorCode.PG_CONFIRM_FAILED);
         }
 
-        // 비즈니스 로직 및 이벤트 발행 (정보계 전달)
+        // 원장 업데이트 + Outbox 저장 + 멱등성 키 저장을 하나의 트랜잭션으로 묶음
         try {
-            // 원장(결제 상태) 업데이트
+            // 결제 상태 완료 업데이트
             payment.complete(pgConfirmId);
-            paymentRepository.save(payment);
 
-            // Kafka 이벤트 발행 시도
+            // 멱등성 키 저장 -  성공한 요청임을 기록
+            idempotencyRepository.save(new IdempotencyKey(idempotencyKey, payment.getId()));
+
+            // Kafka 직접 발행 대신 Outbox에 저장 !!!!
             PaymentCompletedEvent event = new PaymentCompletedEvent(
-                    pgConfirmId,
-                    payment.getOrderId(),
-                    payment.getAmount(),
-                    payment.getType(),
-                    payment.getMerchantId(),
-                    payment.getCreatedAt()
+                    pgConfirmId, payment.getOrderId(), payment.getAmount(),
+                    payment.getType(), payment.getMerchantId(), payment.getCreatedAt()
             );
-            paymentEventProducer.sendPaymentCompletedEvent(event);
+            String payload = objectMapper.writeValueAsString(event);
 
-            log.info("[PaymentService] 결제 완료 및 이벤트 발행: OrderId={}", command.orderId());
+            // INIT 상태로 저장 - Message Relay가 읽어가도록 함
+            outboxRepository.save(new OutboxEvent("PAYMENT", payment.getId(), payload));
+
+            log.info("[Payment] 결제 완료 및 Outbox 기록 성공: OrderId={}", command.orderId());
 
         } catch (Exception e) {
-            // 보상 트랜잭션 시작
-            // DB 저장 실패나 런타임 예외 시 PG 결제 취소
+            // DB 작업 실패 시 PG 결제 취소 - 보상 트랜잭션
             handleCompensation(processor, pgConfirmId, command.orderId());
-
-            // 재처리 절차 - Outbox 패턴
-            // Kafka 발행 실패 시, 재처리 스케줄러가 잡을 수 있도록 DB에 실패 이벤트 기록
-            saveFailedEvent(command.orderId(), pgConfirmId, payment.getMerchantId(), payment.getType(), command.amount());
-
+            log.error("[Payment] 내부 로직 실패로 인한 보상 트랜잭션 실행: OrderId={}", command.orderId());
             throw new CustomException(ErrorCode.PAYMENT_PROCESS_FAILED);
         }
     }

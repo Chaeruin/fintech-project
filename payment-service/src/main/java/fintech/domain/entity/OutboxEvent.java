@@ -21,10 +21,20 @@ public class OutboxEvent {
     @GeneratedValue
     private Long id;
 
-    private String eventType;
-
-    @Column(columnDefinition = "TEXT")
+    private String aggregateType; // "PAYMENT"
+    private Long aggregateId;     // 결제 PK
     private String payload;
 
-    private boolean published;
+    private String eventType;     // "INIT" -> "PUBLISHED" 로 변경
+
+    public OutboxEvent(String aggregateType, Long aggregateId, String payload) {
+        this.aggregateType = aggregateType;
+        this.aggregateId = aggregateId;
+        this.payload = payload;
+        this.eventType = "INIT";
+    }
+
+    public void markPublished() {
+        this.eventType = "PUBLISHED";
+    }
 }
