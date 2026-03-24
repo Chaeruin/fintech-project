@@ -1,12 +1,15 @@
 package fintech.infra.kafka;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import fintech.application.SettlementService;
 import fintech.domain.readentity.SettlementPayment;
 import fintech.domain.repository.SettlementPaymentRepository;
 import fintech.dto.PaymentEvent;
 import fintech.event.PaymentCompletedEvent;
 import fintech.domain.repository.SettlementRepository;
+import fintech.infra.persistence.entity.FailedEvent;
+import fintech.infra.persistence.repository.FailedEventJpaRepository;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +23,8 @@ import org.springframework.stereotype.Component;
 public class PaymentEventConsumer {
 
     private final SettlementPaymentRepository settlementPaymentRepository;
+    private final FailedEventJpaRepository failedEventRepository;
+    private final ObjectMapper objectMapper;
 
     // 결제 완료 이벤트를 수신하여 정산 기초 데이터를 생성
     @KafkaListener(
@@ -48,9 +53,34 @@ public class PaymentEventConsumer {
             settlementPaymentRepository.save(payment);
 
         } catch (DataIntegrityViolationException e) {
-            log.error("이벤트 처리 중 중복 정산 오류 발생 (사후 조치 필요): {}", event.orderId(), e);
-            // 예외 다시 던짐 -> KafkaRetryConfig 설정에 따라 재시도 + DLQ
-            throw e;
+            log.error("[중복] DB 제약조건 위반: {}", event.orderId(), e);
+            throw e; // DLQ로 보냄
+
+        } catch (Exception e) {
+            log.error("[치명적 실패] 이벤트 저장 실패: {}", event.orderId(), e);
+            saveFailedEvent(event, e);
+            throw e; // Kafka retry + DLQ
+        }
+    }
+
+    private void saveFailedEvent(PaymentCompletedEvent event, Exception e) {
+
+        try {
+            String payload = objectMapper.writeValueAsString(event);
+
+            FailedEvent failedEvent = FailedEvent.builder()
+                    .topic("payment-completed")
+                    .eventKey(event.orderId())
+                    .payload(payload)
+                    .errorMessage(e.getMessage())
+                    .retryCount(0)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+
+            failedEventRepository.save(failedEvent);
+
+        } catch (Exception ex) {
+            log.error("FailedEvent 저장 실패", ex);
         }
     }
 }
