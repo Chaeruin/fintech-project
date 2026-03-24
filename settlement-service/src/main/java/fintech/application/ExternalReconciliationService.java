@@ -1,4 +1,4 @@
-package fintech.job;
+package fintech.application;
 
 
 import fintech.infra.pg.PgClient;
@@ -13,11 +13,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
-@Component
+@Service
 @RequiredArgsConstructor
 @Slf4j
-public class ExternalReconciliationJob {
+public class ExternalReconciliationService {
     private final PgClient pgClient;
     private final PaymentJpaRepository paymentRepository;
     private final AlertProvider alertProvider;
