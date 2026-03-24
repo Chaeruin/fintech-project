@@ -3,7 +3,6 @@ package fintech.infra.scheduler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fintech.domain.entity.OutboxEvent;
 import fintech.domain.repository.OutboxRepository;
-import fintech.event.PaymentCompletedEvent;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +19,6 @@ public class OutboxPublisher {
 
     private final OutboxRepository outboxRepository;
     private final KafkaTemplate<String, String> kafkaTemplate;
-    private final ObjectMapper objectMapper;
 
     //INIT 상태인 이벤트를 찾아 Kafka로 발행
     @Scheduled(fixedDelay = 1000)
@@ -32,13 +30,10 @@ public class OutboxPublisher {
 
         for (OutboxEvent event : pendingEvents) {
             try {
-                // JSON → 객체 변환
-                PaymentCompletedEvent payload =
-                        objectMapper.readValue(event.getPayload(), PaymentCompletedEvent.class);
-
                 kafkaTemplate.send(
-                        event.ge,
-                        payload
+                        event.getTopic(),
+                        event.getEventKey(),
+                        event.getPayload()
                 ).whenComplete((result, ex) -> {
 
                     if (ex == null) {
@@ -46,7 +41,7 @@ public class OutboxPublisher {
                         updateToPublished(event.getId());
                     } else {
                         log.error("Outbox 전송 실패: {}", event.getEventKey(), ex);
-                        // ❗ 상태 유지 (INIT) → 다음 스케줄에서 재시도
+                        // 상태 유지 (INIT) → 다음 스케줄에서 재시도
                     }
                 });
 

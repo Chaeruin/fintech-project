@@ -21,13 +21,18 @@ public class OutboxEvent {
     @GeneratedValue
     private Long id;
 
+    private String topic;
+    private String eventKey;
+
     private String aggregateType; // "PAYMENT"
     private Long aggregateId;     // 결제 PK
     private String payload;
 
     private String eventType;     // "INIT" -> "PUBLISHED" 로 변경
 
-    public OutboxEvent(String aggregateType, Long aggregateId, String payload) {
+    public OutboxEvent(String topic, String eventKey, String aggregateType, Long aggregateId, String payload) {
+        this.topic = topic;
+        this.eventKey = eventKey;
         this.aggregateType = aggregateType;
         this.aggregateId = aggregateId;
         this.payload = payload;

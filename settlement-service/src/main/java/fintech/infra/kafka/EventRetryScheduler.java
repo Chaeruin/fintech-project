@@ -1,6 +1,5 @@
 package fintech.infra.kafka;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fintech.application.SettlementService;
 import fintech.dto.PaymentEvent;
 import fintech.infra.persistence.entity.FailedEvent;
