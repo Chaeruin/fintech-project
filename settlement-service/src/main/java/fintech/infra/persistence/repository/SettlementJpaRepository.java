@@ -1,4 +1,4 @@
-package fintech.infra.persistence;
+package fintech.infra.persistence.repository;
 
 
 import fintech.domain.entity.Settlement;

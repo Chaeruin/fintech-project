@@ -9,7 +9,7 @@ import fintech.event.PaymentCompletedEvent;
 import fintech.domain.entity.Settlement;
 import fintech.global.exception.CustomException;
 import fintech.domain.service.SettlementCalculator;
-import fintech.infra.persistence.SettlementJpaRepository;
+import fintech.infra.persistence.repository.SettlementJpaRepository;
 import java.math.RoundingMode;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
