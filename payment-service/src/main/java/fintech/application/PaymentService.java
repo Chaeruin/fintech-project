@@ -10,7 +10,6 @@ import fintech.domain.repository.IdempotencyRepository;
 import fintech.domain.repository.OutboxRepository;
 import fintech.event.PaymentCompletedEvent;
 import fintech.domain.entity.Payment;
-import fintech.domain.enums.PaymentType;
 import fintech.global.exception.CustomException;
 import fintech.global.exception.ErrorCode;
 import fintech.domain.service.PaymentProcessor;
@@ -72,7 +71,8 @@ public class PaymentService {
             String payload = objectMapper.writeValueAsString(event);
 
             // INIT 상태로 저장 - Message Relay가 읽어가도록 함
-            outboxRepository.save(new OutboxEvent("PAYMENT", payment.getId(), payload));
+            outboxRepository.save(new OutboxEvent("payment-completed", payment.getOrderId(),
+                    "PAYMENT", payment.getId(), payload));
 
             log.info("[Payment] 결제 완료 및 Outbox 기록 성공: OrderId={}", command.orderId());
 
