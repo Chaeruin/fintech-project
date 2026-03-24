@@ -10,6 +10,7 @@ import fintech.domain.repository.OutboxRepository;
 import fintech.event.PaymentCompletedEvent;
 import fintech.domain.entity.Payment;
 import fintech.domain.enums.PaymentType;
+import fintech.global.aop.DistributedLock;
 import fintech.global.exception.CustomException;
 import fintech.global.exception.ErrorCode;
 import fintech.domain.service.PaymentProcessor;
@@ -44,38 +45,13 @@ public class PaymentService {
     private final ObjectMapper objectMapper;
     private final RedissonClient redissonClient;
 
-    @Transactional
+    @DistributedLock(key = "#command.paymentKey")
     public void completePayment(String idempotencyKey, PaymentConfirmCommand command) {
-        // Idempotency key 기반 분산락 획득
-        String lockKey = "lock:payment:" + idempotencyKey;
-        RLock lock = redissonClient.getLock(lockKey);
-
-        try {
-            // 최대 5초 대기, 10초 후 자동 해제
-            if (!lock.tryLock(5, 10, TimeUnit.SECONDS)) {
-                log.warn("[결제 중복] 락 획득 실패: Key={}", idempotencyKey);
-                throw new CustomException(ErrorCode.DUPLICATE_PAYMENT);
-            }
-
-            try {
-                // 락 획득 후 다시 한번 DB 멱등성 체크
-                if (idempotencyRepository.existsByIdempotencyKey(idempotencyKey)) {
-                    throw new CustomException(ErrorCode.DUPLICATE_PAYMENT);
-                }
-                // 실결제 및 Outbox 저장
-                executePaymentProcess(idempotencyKey, command);
-
-            } finally {
-                if (lock.isHeldByCurrentThread()) lock.unlock();
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException("결제 처리 중 인터럽트 발생");
-        }
-    }
-
-    private void executePaymentProcess(String idempotencyKey, PaymentConfirmCommand command) {
         log.info("[Payment] 결제 프로세스 시작: OrderId={}, Key={}", command.orderId(), idempotencyKey);
+        // DB 멱등성 체크
+        if (idempotencyRepository.existsByIdempotencyKey(idempotencyKey)) {
+            throw new CustomException(ErrorCode.DUPLICATE_PAYMENT);
+        }
 
         // 데이터 조회 및 사전 검증
         Payment payment = paymentRepository.findByOrderId(command.orderId())

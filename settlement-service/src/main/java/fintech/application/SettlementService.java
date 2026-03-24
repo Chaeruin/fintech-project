@@ -7,6 +7,7 @@ import fintech.domain.entity.Payment;
 import fintech.dto.PaymentEvent;
 import fintech.event.PaymentCompletedEvent;
 import fintech.domain.entity.Settlement;
+import fintech.global.aop.DistributedLock;
 import fintech.global.exception.CustomException;
 import fintech.domain.service.SettlementCalculator;
 import fintech.infra.persistence.SettlementJpaRepository;
@@ -75,38 +76,14 @@ public class SettlementService {
                 .build();
     }
 
-    @Transactional
+    @DistributedLock(key = "#event.orderId")
     public void processSettlement(PaymentEvent event) {
-        String lockKey = "lock:settlement:" + event.orderId();
-        RLock lock = redissonClient.getLock(lockKey);
-        Settlement settlement;
-        try {
-            if (!lock.tryLock(5, 10, TimeUnit.SECONDS)) {
-                log.info("[정산 경합] 이미 처리 중인 주문: {}", event.orderId());
-                return;
-            }
-            try {
-                // 락 획득 후 DB 중복 체크
-                if (settlementRepository.existsByOrderId(event.orderId())) {
-                    log.warn("[정산 중복] 이미 정산 완료된 주문: {}", event.orderId());
-                    return;
-                }
-                // 정산 데이터 생성
-                settlement = createSettlement(event);
-
-            } finally {
-                if (lock.isHeldByCurrentThread()) lock.unlock();
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException("정산 처리 중 인터럽트 발생");
+        // DB 멱등성 체크
+        if (settlementRepository.existsByOrderId(event.orderId())) {
+            log.warn("[정산 중복] 이미 정산 완료된 주문: {}", event.orderId());
+            return;
         }
-
-        log.info("[정산 완료] 주문번호: {}, 정산액: {}, 수수료: {}",
-                event.orderId(), settlement.getSettlementAmount(), settlement.getTotalAmount());
-    }
-
-    public Settlement createSettlement(PaymentEvent event) {
+        // 정산 데이터 생성
         // 수수료 및 정산 금액 계산
         BigDecimal feeRate = new BigDecimal("0.03");
         BigDecimal fee = event.amount().multiply(feeRate).setScale(0, RoundingMode.HALF_UP);
@@ -117,7 +94,8 @@ public class SettlementService {
 
         settlementRepository.save(settlement);
 
-        return settlement;
+        log.info("[정산 완료] 주문번호: {}, 정산액: {}, 수수료: {}",
+                event.orderId(), settlement.getSettlementAmount(), settlement.getTotalAmount());
     }
 
 
