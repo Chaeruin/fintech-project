@@ -12,6 +12,9 @@ import fintech.domain.service.SettlementCalculator;
 import fintech.infra.persistence.SettlementJpaRepository;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.concurrent.TimeUnit;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -28,6 +31,7 @@ public class SettlementService {
     private final SettlementJpaRepository settlementRepository;
     private final SettlementCalculator settlementCalculator;
     private final ObjectMapper objectMapper;
+    private final RedissonClient redissonClient;
 
     @Transactional
     public void processPaymentEvent(PaymentCompletedEvent event) {
@@ -73,14 +77,30 @@ public class SettlementService {
 
     @Transactional
     public void processSettlement(PaymentEvent event) {
-        log.info("[정산 프로세스 시작] 주문번호: {}", event.orderId());
-        //멱등성 체크
-        if (settlementRepository.existsByOrderId(event.orderId())) {
-            log.warn("[정산 중복 방지] 이미 처리된 주문입니다. 주문번호: {}", event.orderId());
-            return;
-        }
+        String lockKey = "lock:settlement:" + event.orderId();
+        RLock lock = redissonClient.getLock(lockKey);
+        Settlement settlement;
+        try {
+            if (!lock.tryLock(5, 10, TimeUnit.SECONDS)) {
+                log.info("[정산 경합] 이미 처리 중인 주문: {}", event.orderId());
+                return;
+            }
+            try {
+                // 락 획득 후 DB 중복 체크
+                if (settlementRepository.existsByOrderId(event.orderId())) {
+                    log.warn("[정산 중복] 이미 정산 완료된 주문: {}", event.orderId());
+                    return;
+                }
+                // 정산 데이터 생성
+                settlement = createSettlement(event);
 
-        Settlement settlement = createSettlement(event);
+            } finally {
+                if (lock.isHeldByCurrentThread()) lock.unlock();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("정산 처리 중 인터럽트 발생");
+        }
 
         log.info("[정산 완료] 주문번호: {}, 정산액: {}, 수수료: {}",
                 event.orderId(), settlement.getSettlementAmount(), settlement.getTotalAmount());
