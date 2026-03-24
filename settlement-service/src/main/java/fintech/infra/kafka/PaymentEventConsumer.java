@@ -2,9 +2,12 @@ package fintech.infra.kafka;
 
 
 import fintech.application.SettlementService;
+import fintech.domain.readentity.SettlementPayment;
+import fintech.domain.repository.SettlementPaymentRepository;
 import fintech.dto.PaymentEvent;
 import fintech.event.PaymentCompletedEvent;
 import fintech.domain.repository.SettlementRepository;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -16,8 +19,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class PaymentEventConsumer {
 
-    private final SettlementService settlementService;
-    private final SettlementRepository settlementRepository;
+    private final SettlementPaymentRepository settlementPaymentRepository;
 
     // 결제 완료 이벤트를 수신하여 정산 기초 데이터를 생성
     @KafkaListener(
@@ -31,13 +33,20 @@ public class PaymentEventConsumer {
 
         try {
             // 멱등성 체크 -  이미 정산 원장에 존재하는 주문인지 확인
-            if (settlementRepository.existsByOrderId(event.orderId())) {
+            if (settlementPaymentRepository.existsByOrderId(event.orderId())) {
                 log.warn("[멱등성] 이미 처리된 정산 이벤트입니다. 스킵합니다. OrderId = {}", event.orderId());
                 return;
             }
-            settlementService.processPaymentEvent(event);
-            PaymentEvent paymentEvent = settlementService.parseEvent(event.paymentId());
-            settlementService.processSettlement(paymentEvent);
+            SettlementPayment payment = SettlementPayment.builder()
+                    .orderId(event.orderId())
+                    .transactionKey(event.transactionKey())
+                    .amount(event.amount())
+                    .status("PAID")
+                    .createdAt(LocalDateTime.now())
+                    .build();
+
+            settlementPaymentRepository.save(payment);
+
         } catch (DataIntegrityViolationException e) {
             log.error("이벤트 처리 중 중복 정산 오류 발생 (사후 조치 필요): {}", event.orderId(), e);
             // 예외 다시 던짐 -> KafkaRetryConfig 설정에 따라 재시도 + DLQ

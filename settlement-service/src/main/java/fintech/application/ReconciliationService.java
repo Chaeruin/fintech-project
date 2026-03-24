@@ -1,6 +1,7 @@
 package fintech.application;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import fintech.domain.repository.SettlementPaymentRepository;
 import fintech.dto.PaymentEvent;
 import fintech.infra.alert.AlertService;
 import fintech.infra.persistence.SettlementJpaRepository;
@@ -23,7 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ReconciliationService {
 
-    private final PaymentJpaRepository paymentRepository;
+    private final SettlementPaymentRepository settlementPaymentRepository;
     private final SettlementJpaRepository settlementRepository;
     private final FailedEventJpaRepository failedEventRepository;
     private final AlertService alertService;
@@ -34,10 +35,8 @@ public class ReconciliationService {
     public void reconcileDaily(LocalDate date) {
         log.info("[대사 시작] 대상 일자: {}", date);
 
-        BigDecimal totalPaymentAmount = paymentRepository.sumAmountByDateAndStatus(date, "PAID")
-                .orElse(BigDecimal.ZERO);
-        List<String> paymentOrderIds = paymentRepository.findOrderIdsByDateAndStatus(date, "PAID");
-
+        BigDecimal totalPaymentAmount = settlementPaymentRepository.sumAmountByDateAndStatus(date, "PAID");
+        List<String> paymentOrderIds = settlementPaymentRepository.findOrderIdsByDateAndStatus(date, "PAID");
         BigDecimal totalSettledAmount = settlementRepository.sumTotalAmountByDate(date)
                 .orElse(BigDecimal.ZERO);
         List<String> settledOrderIds = settlementRepository.findOrderIdsByDate(date);

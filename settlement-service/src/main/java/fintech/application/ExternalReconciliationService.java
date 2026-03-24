@@ -1,11 +1,11 @@
 package fintech.application;
 
 
+import fintech.domain.readentity.SettlementPayment;
+import fintech.domain.repository.SettlementPaymentRepository;
 import fintech.infra.pg.client.PgClient;
 import fintech.dto.PgTransactionDto;
-import fintech.domain.entity.Payment;
 import fintech.infra.alert.AlertProvider;
-import fintech.infra.persistence.repository.PaymentJpaRepository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class ExternalReconciliationService {
     private final PgClient pgClient;
-    private final PaymentJpaRepository paymentRepository;
+    private final SettlementPaymentRepository settlementPaymentRepository;
     private final AlertProvider alertProvider;
 
     @Scheduled(cron = "0 0 3 * * *")
@@ -31,8 +31,9 @@ public class ExternalReconciliationService {
         // PG사 실제 성공 내역 조회
         List<PgTransactionDto> pgSuccessList = pgClient.fetchSuccessHistory(start.toLocalDate());
 
-        // 우리 원장(DB) 성공 내역 조회
-        List<Payment> internalList = paymentRepository.findAllByCreatedAtBetweenAndStatus(start, end, "PAID");
+        // 시스템 원장(kafka 이벤트로 저장된 DB 데이터) 성공 내역 조회
+        List<SettlementPayment> internalList =
+                settlementPaymentRepository.findAllByCreatedAtBetweenAndStatus(start, end, "PAID");
 
         // 대조 로직
         // Case A: PG에는 있는데 우리 DB에는 없는 경우 (낙구 - 심각)

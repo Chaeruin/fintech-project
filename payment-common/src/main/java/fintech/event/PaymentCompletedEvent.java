@@ -12,5 +12,6 @@ public record PaymentCompletedEvent(
         BigDecimal amount,          // 결제 금액
         PaymentType paymentType,    // 결제 수단
         String merchantId,          // 가맹점 ID (정산 주체)
-        LocalDateTime completedAt   // 결제 완료 시각
+        LocalDateTime completedAt,  // 결제 완료 시각
+        String transactionKey
 ) {}
