@@ -3,6 +3,7 @@ package fintech.application;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import fintech.domain.entity.Payment;
 import fintech.dto.PaymentEvent;
 import fintech.event.PaymentCompletedEvent;
 import fintech.domain.entity.Settlement;
@@ -39,7 +40,7 @@ public class SettlementService {
         // 기존 정산 마스터 조회 혹은 생성
         Settlement settlement = settlementRepository.findByMerchantIdAndSettlementDate(
                         event.merchantId(), settlementDate)
-                .orElseGet(() -> createNewSettlement(event.merchantId(), settlementDate));
+                .orElseGet(() -> createNewSettlement(event.merchantId(), event.orderId(), settlementDate));
 
         // 금액 합산 and 수수료 계산
         BigDecimal fee = settlementCalculator.calculateFee(event.amount());
@@ -59,9 +60,10 @@ public class SettlementService {
                 .orElseThrow(() -> new CustomException(ErrorCode.SETTLEMENT_NOT_FOUND));
     }
 
-    private Settlement createNewSettlement(String merchantId, LocalDateTime date) {
+    private Settlement createNewSettlement(String merchantId, String orderId, LocalDateTime date) {
         return Settlement.builder()
                 .merchantId(merchantId)
+                .orderId(orderId)
                 .totalAmount(BigDecimal.ZERO)
                 .totalFee(BigDecimal.ZERO)
                 .settlementAmount(BigDecimal.ZERO)
@@ -78,26 +80,28 @@ public class SettlementService {
             return;
         }
 
+        Settlement settlement = createSettlement(event);
+
+        log.info("[정산 완료] 주문번호: {}, 정산액: {}, 수수료: {}",
+                event.orderId(), settlement.getSettlementAmount(), settlement.getTotalAmount());
+    }
+
+    public Settlement createSettlement(PaymentEvent event) {
         // 수수료 및 정산 금액 계산
         BigDecimal feeRate = new BigDecimal("0.03");
         BigDecimal fee = event.amount().multiply(feeRate).setScale(0, RoundingMode.HALF_UP);
         BigDecimal settlementAmount = event.amount().subtract(fee);
 
-        // 3. 정산 엔티티 생성 및 저장
-        Settlement settlement = Settlement.builder()
-                .orderId(event.orderId())
-                .settlementAmount(event.amount())
-                .totalAmount(fee)
-                .settlementAmount(settlementAmount)
-                .settlementDate(LocalDateTime.now())
-                .build();
+        // 정산 엔티티 생성 및 저장
+        Settlement settlement = createNewSettlement(event.orderId(), event.merchantId(), event.createdAt());
 
         settlementRepository.save(settlement);
 
-        log.info("[정산 완료] 주문번호: {}, 정산액: {}, 수수료: {}", event.orderId(), settlementAmount, fee);
+        return settlement;
     }
 
-    private PaymentEvent parseEvent(String payload) {
+
+    public PaymentEvent parseEvent(String payload) {
         try {
             return objectMapper.readValue(payload, PaymentEvent.class);
         } catch (JsonProcessingException e) {
