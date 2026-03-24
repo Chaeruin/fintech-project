@@ -27,10 +27,10 @@ public class PaymentService {
 
     private final PaymentProcessorFactory paymentProcessorFactory; // PG사 선택기
     private final PaymentValidator paymentValidator;
-    private final OutboxRepository outboxRepository;
     private final PaymentJpaRepository paymentRepository;
     private final IdempotencyRepository idempotencyRepository;
     private final ObjectMapper objectMapper;
+    private final OutboxPublisher outboxPublisher;
 
     @DistributedLock(key = "#command.paymentKey")
     public void completePayment(String idempotencyKey, PaymentConfirmCommand command) {
@@ -71,8 +71,11 @@ public class PaymentService {
             String payload = objectMapper.writeValueAsString(event);
 
             // INIT 상태로 저장 - Message Relay가 읽어가도록 함
-            outboxRepository.save(new OutboxEvent("payment-completed", payment.getOrderId(),
-                    "PAYMENT", payment.getId(), payload));
+            outboxPublisher.publish(
+                    "payment-completed",
+                    "INIT",
+                    event
+            );
 
             log.info("[Payment] 결제 완료 및 Outbox 기록 성공: OrderId={}", command.orderId());
 

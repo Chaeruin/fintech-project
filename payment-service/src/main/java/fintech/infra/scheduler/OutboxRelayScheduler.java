@@ -1,6 +1,5 @@
 package fintech.infra.scheduler;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fintech.domain.entity.OutboxEvent;
 import fintech.domain.repository.OutboxRepository;
 import java.util.List;
@@ -15,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class OutboxPublisher {
+public class OutboxRelayScheduler {
 
     private final OutboxRepository outboxRepository;
     private final KafkaTemplate<String, String> kafkaTemplate;
